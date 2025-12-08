@@ -1,164 +1,170 @@
-import sys
+import json
+import os
+from glob import glob
 from pathlib import Path
 
+import nibabel as nb
 import numpy as np
 import pandas as pd
+from nilearn.glm.first_level import FirstLevelModel
+from nilearn.interfaces.bids import save_glm_to_bids
 from scipy.stats import norm
 
-from nilearn.glm.first_level import first_level_from_bids
-from nilearn.interfaces.bids import save_glm_to_bids
 
+if __name__ == "__main__":
+    # ---------- CONFIG ----------
+    bids_root = Path("/cbica/projects/executive_function/mebold-trt/dset")
+    derivatives_dir = Path("/cbica/projects/executive_function/mebold-trt/derivatives")
+    fmriprep_dir = derivatives_dir / "fmriprep"
+    tedana_dir = derivatives_dir / "tedana"
+    out_dir = Path("/cbica/projects/executive_function/mebold-trt/derivatives/fracback")
+    out_dir.mkdir(parents=True, exist_ok=True)
 
-# ============================================================
-# GET SUBJECT FROM COMMAND LINE
-# ============================================================
-sub_id = sys.argv[1]  # subject passed by SLURM array / CLI
-sub_labels = [sub_id]  # nilearn expects a list
+    subject_dirs = sorted(glob("/cbica/projects/executive_function/mebold-trt/dset/sub-*"))
+    for subject_dir in subject_dirs:
+        sub_id = os.path.basename(subject_dir).split("-")[1]
+        session_dirs = sorted(glob(f"{subject_dir}/ses-*"))
+        for session_dir in session_dirs:
+            ses_id = os.path.basename(session_dir).split("-")[1]
+            print(f"Running first-level GLM for subject: {sub_id} and session: {ses_id}")
 
-print(f"Running first-level GLM for subject: {sub_id}")
+            bids_func_dir = bids_root / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
+            fmriprep_func_dir = fmriprep_dir / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
+            tedana_func_dir = tedana_dir / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
+            prefix = f"sub-{sub_id}_ses-{ses_id}_task-fracback_acq-MBME"
 
-# ---------- CONFIG ----------
-# BIDS root
-bids_root = Path("/cbica/projects/executive_function/mebold-trt/dset")
+            # ---------- Preprocessed data from fMRIPrep ----------
+            preproc_file = (
+                fmriprep_func_dir / f"{prefix}_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
+            )
+            if not preproc_file.exists():
+                print(f"\tPreprocessed file not found for subject: {sub_id} and session: {ses_id}")
+                continue
 
-# fMRIPrep derivatives containing preprocessed func + confounds
-derivatives_folder = "/cbica/projects/executive_function/mebold-trt/derivatives/fmriprep"
-deriv_root = Path(derivatives_folder)
+            preproc_img = nb.load(preproc_file)
 
-# Task and space
-task_label = "fracback"
-space_label = "MNI152NLin6Asym"
+            preproc_json = preproc_file.replace(".nii.gz", ".json")
+            with open(preproc_json, "r") as f:
+                preproc_json_data = json.load(f)
+            t_r = preproc_json_data["RepetitionTime"]
+            slice_time_ref = preproc_json_data["StartTime"]
 
-# Output directory for maps + reports
-out_dir = Path(
-    "/cbica/projects/executive_function/mebold-trt/derivatives/fracback"
-)
-out_dir.mkdir(parents=True, exist_ok=True)
+            mask_file = fmriprep_func_dir / f"{prefix}_space-MNI152NLin6Asym_res-2_desc-brain_mask.nii.gz"
+            if not mask_file.exists():
+                print(f"\tMask file not found for subject: {sub_id} and session: {ses_id}")
+                continue
 
-# Smoothing to apply in Nilearn
-smoothing_fwhm = 5.0
+            mask_img = str(mask_file)
 
-# ============================================================
-# FIND FMRIPREP BRAIN MASK FOR THIS SUBJECT
-# ============================================================
-# Example expected filename:
-# sub-01_ses-1_task-fracback_acq-MBME_run-01_space-MNI152NLin6Asym_res-2_desc-brain_mask.nii.gz
-mask_pattern = (
-    f"sub-{sub_id}/ses-*/func/"
-    f"sub-{sub_id}_ses-*_task-{task_label}_acq-MBME"
-    f"_space-{space_label}_res-2_desc-brain_mask.nii.gz"
-)
-mask_candidates = sorted(deriv_root.glob(mask_pattern))
+            # ---------- Dummy volumes from fMRIPrep ----------
+            confounds_file = fmriprep_func_dir / f"{prefix}_desc-confounds_timeseries.tsv"
+            if not confounds_file.exists():
+                print(f"\tConfounds file not found for subject: {sub_id} and session: {ses_id}")
+                continue
 
-mask_img = None
-if len(mask_candidates) == 0:
-    print(
-        f"[WARNING] No fMRIPrep brain mask found for sub-{sub_id} with pattern:\n"
-        f"  {mask_pattern}\n"
-        "Falling back to Nilearn's automatic mask.\n"
-    )
-else:
-    # Since only one run per subject, take the first match
-    mask_img = str(mask_candidates[0])
-    print(f"Using fMRIPrep brain mask for sub-{sub_id}:\n  {mask_img}\n")
+            fmriprep_confounds_df = pd.read_table(confounds_file)
+            # Infer the number of dummy volumes from the confounds dataframe
+            nss_cols = [c for c in fmriprep_confounds_df.columns if c.startswith("non_steady_state_outlier")]
 
-# ============================================================
-# BUILD FIRST-LEVEL MODEL FROM BIDS
-# ============================================================
-(
-    models,
-    models_run_imgs,
-    models_events,
-    models_confounds,
-) = first_level_from_bids(
-    dataset_path=bids_root,
-    task_label=task_label,
-    space_label=space_label,
-    sub_labels=sub_labels,
-    derivatives_folder=derivatives_folder,
-    img_filters=[("desc", "preproc")],
-    smoothing_fwhm=smoothing_fwhm,
-    n_jobs=4,
-    verbose=1,
-    # Use fMRIPrep's cosine regressors for drift (high_pass),
-    # so we turn OFF the GLM's own drift model.
-    drift_model=None,
-    # Confound strategy: motion + high_pass (cosines) + aCompCor (first 5)
-    confounds_strategy=("motion", "high_pass", "compcor"),
-    confounds_motion="basic",
-    confounds_compcor="anat_combined",
-    confounds_n_compcor=5,
-    # Use fMRIPrep mask if found; otherwise None (Nilearn auto-mask)
-    mask_img=mask_img,
-)
+            dummy_scans = 0
+            if nss_cols:
+                initial_volumes_df = fmriprep_confounds_df[nss_cols]
+                dummy_scans = np.any(initial_volumes_df.to_numpy(), axis=1)
+                dummy_scans = np.where(dummy_scans)[0]
 
-# Single subject
-model = models[0]
-run_imgs = models_run_imgs[0]
-events_list = models_events[0]
-confounds_list = models_confounds[0]
+                # reasonably assumes all NSS volumes are contiguous
+                dummy_scans = int(dummy_scans[-1] + 1)
 
-# Implement Jeanette Mumford's ConsDurRTDur model
-# and rename trial types to valid Python identifiers:
-#   0BACK -> zero_back
-#   2BACK -> two_back
-cons_dur_rt_dur_events_list = []
-for events in events_list:
-    events = events.copy()
+            print(f"\t{dummy_scans} dummy scans")
 
-    # Rename trial_type labels before building design matrix
-    if "trial_type" in events.columns:
-        events["trial_type"] = events["trial_type"].replace(
-            {
-                "0BACK": "zero_back",
-                "2BACK": "two_back",
-            }
-        )
+            # ---------- Events from raw BIDS ----------
+            events_file = bids_func_dir / f"{prefix}_events.tsv"
+            if not events_file.exists():
+                print(f"\tEvents file not found for subject: {sub_id} and session: {ses_id}")
+                continue
 
-    # Create dataframe only containing trials with responses
-    response_events = events.loc[~np.isnan(events["response_time"])].copy()
-    # Set duration to response time
-    response_events.loc[:, "duration"] = response_events.loc[:, "response_time"]
-    # Change trial type to a single value (RTDur)
-    response_events.loc[:, "trial_type"] = "RTDur"
-    # Add new "condition" back into events dataframe
-    events = pd.concat((events, response_events))
-    events = events.sort_values(by="onset")
-    cons_dur_rt_dur_events_list.append(events)
+            events_df = pd.read_table(events_file)
 
-print(f"Number of runs for subject {sub_id}: {len(run_imgs)}")
-print("Confounds entries for each run:")
-for i, c in enumerate(confounds_list):
-    print(f"  Run {i}: {c}")
+            # Limit to 0back and 2back trials
+            events_df = events_df.loc[events_df["trial_type"].isin(["0back", "2back"])]
+            events_df = events_df[["onset", "duration", "trial_type", "response_time"]]
 
-# ---------- FIT MODEL ----------
-model.minimize_memory = False
+            # Implement Jeanette Mumford's ConsDurRTDur model
+            # and rename trial types to valid Python identifiers:
+            #   0back -> zero_back
+            #   2back -> two_back
+            events_df["trial_type"] = events_df["trial_type"].replace(
+                {
+                    "0BACK": "zero_back",
+                    "2BACK": "two_back",
+                }
+            )
+            response_events_df = events_df.loc[~np.isnan(events_df["response_time"])].copy()
+            response_events_df.loc[:, "duration"] = response_events_df.loc[:, "response_time"]
+            response_events_df.loc[:, "trial_type"] = "RTDur"
+            cons_dur_rt_dur_events_df = pd.concat((events_df, response_events_df))
+            cons_dur_rt_dur_events_df = cons_dur_rt_dur_events_df.sort_values(by="onset")
 
-print(f"\nFitting GLM for subject {sub_id}...")
-model = model.fit(
-    run_imgs,
-    events=cons_dur_rt_dur_events_list,
-    confounds=confounds_list,
-)
+            # ---------- Confounds from TEDANA ----------
+            tedana_classifications = tedana_func_dir / f"{prefix}_desc-tedana_metrics.tsv"
+            if not tedana_classifications.exists():
+                print(f"\tTedana classifications file not found for subject: {sub_id} and session: {ses_id}")
+                continue
+            tedana_df = pd.read_table(tedana_classifications)
 
-# Inspect design matrix
-design_matrix = model.design_matrices_[0]
-print("\nDesign matrix columns:")
-print(design_matrix.columns)
-print(f"\nTotal # regressors in design matrix: {design_matrix.shape[1]}")
+            mixing_file = tedana_func_dir / f"{prefix}_desc-ICAOrth_mixing.tsv"
+            if not mixing_file.exists():
+                print(f"\tTedana mixing file not found for subject: {sub_id} and session: {ses_id}")
+                continue
+            mixing_df = pd.read_table(mixing_file)
+            noise_components = [c for c in tedana_df['Component'].tolist() if tedana_df['Component'][c] == 'noise']
+            confounds_df = mixing_df[noise_components]
 
-save_glm_to_bids(
-    model,
-    contrasts="two_back - zero_back",
-    contrast_types={"two_back - zero_back": "t"},
-    out_dir=out_dir,
-    threshold=norm.isf(0.001),
-    cluster_threshold=10,
-    bg_img=(
-        "/cbica/projects/executive_function/.cache/templateflow/"
-        "tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-02_T1w.nii.gz"
-    ),
-)
+            # ---------- Remove dummy volumes if necessary ----------
+            if dummy_scans > 0:
+                cons_dur_rt_dur_events_df["onset"] = cons_dur_rt_dur_events_df["onset"] - (dummy_scans * t_r)
+                cons_dur_rt_dur_events_df = cons_dur_rt_dur_events_df.loc[cons_dur_rt_dur_events_df["onset"] >= 0].reset_index(drop=True)
+                preproc_img = preproc_img.slicer[..., dummy_scans:]
+                confounds_df = confounds_df.loc[dummy_scans:].reset_index(drop=True)
 
-print("\nDone.\n")
+            # ---------- Fit GLM ----------
+            model = FirstLevelModel(
+                t_r=t_r,
+                slice_time_ref=slice_time_ref,
+                hrf_model="glover",
+                drift_model="cosine",
+                high_pass=0.01,
+                drift_order=1,
+                mask_img=mask_img,
+                smoothing_fwhm=5,
+                noise_model="ar1",
+                minimize_memory=False,
+                subject_label=sub_id,
+            )
+            model = model.fit(
+                run_imgs=preproc_img,
+                events=cons_dur_rt_dur_events_df,
+                confounds=confounds_df,
+            )
 
+            # Inspect design matrix
+            design_matrix = model.design_matrices_[0]
+            print("\tDesign matrix columns:")
+            print("\t\t", design_matrix.columns)
+            print(f"\tTotal # regressors in design matrix: {design_matrix.shape[1]}")
+
+            save_glm_to_bids(
+                model,
+                contrasts="two_back - zero_back",
+                contrast_types={"two_back - zero_back": "t"},
+                out_dir=out_dir,
+                threshold=norm.isf(0.001),
+                cluster_threshold=10,
+                bg_img=(
+                    "/cbica/projects/executive_function/.cache/templateflow/"
+                    "tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-02_T1w.nii.gz"
+                ),
+            )
+            print(f"\tDone fitting GLM for subject: {sub_id} and session: {ses_id}")
+
+    print("\n----\nDONE\n----\n")
