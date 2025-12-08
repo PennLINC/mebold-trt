@@ -16,9 +16,9 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
     base_search = os.path.join(
         raw_dir,
         "sub-*",
-        "ses-1",
+        "ses-*",
         "func",
-        "sub-*_ses-1_*_echo-1_part-mag_bold.nii.gz",
+        "sub-*_ses-*_echo-1_part-mag_bold.nii.gz",
     )
     base_files = sorted(glob(base_search))
     if not base_files:
@@ -30,6 +30,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
         base_filename = os.path.basename(base_file)
         print(f"\t{base_filename}")
         subject = base_filename.split("_")[0]
+        session = base_filename.split("_")[1]
         prefix = base_filename.split("_echo-1")[0]
 
         # Get the fMRIPrep brain mask
@@ -37,7 +38,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
         mask = os.path.join(
             fmriprep_dir,
             subject,
-            "ses-1",
+            session,
             "func",
             f"{mask_base}_part-mag_desc-brain_mask.nii.gz",
         )
@@ -47,7 +48,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
         confounds_file = os.path.join(
             fmriprep_dir,
             subject,
-            "ses-1",
+            session,
             "func",
             f"{mask_base}_part-mag_desc-confounds_timeseries.tsv",
         )
@@ -78,7 +79,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             fmriprep_file = os.path.join(
                 fmriprep_dir,
                 subject,
-                "ses-1",
+                session,
                 "func",
                 f"{base_query}_desc-preproc_bold.nii.gz",
             )
@@ -94,7 +95,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             echo_img.to_filename(temporary_file)
             fmriprep_files.append(temporary_file)
 
-        tedana_run_out_dir = os.path.join(tedana_out_dir, subject, "ses-1", "func")
+        tedana_run_out_dir = os.path.join(tedana_out_dir, subject, session, "func")
         os.makedirs(tedana_run_out_dir, exist_ok=True)
         if os.path.isfile(os.path.join(tedana_run_out_dir, f"{prefix}_tedana_report.html")):
             print(f"DONE: {prefix}")
@@ -119,11 +120,10 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
 
 
 if __name__ == "__main__":
-    raw_dir_ = "/cbica/projects/pafin/dset"
-    fmriprep_dir_ = "/cbica/projects/pafin/derivatives/fmriprep"
-    temp_dir_ = "/cbica/comp_space/pafin/tedana_temp"
-    tedana_out_dir_ = "/cbica/projects/pafin/derivatives/tedana"
-    tedana_aroma_out_dir_ = "/cbica/projects/pafin/derivatives/tedana+aroma"
+    raw_dir_ = "/cbica/projects/executivefunction/mebold-trt/dset"
+    fmriprep_dir_ = "/cbica/projects/executivefunction/mebold-trt/derivatives/fmriprep"
+    temp_dir_ = "/cbica/comp_space/executivefunction/tedana_temp"
+    tedana_out_dir_ = "/cbica/projects/executivefunction/mebold-trt/derivatives/tedana"
 
     os.makedirs(temp_dir_, exist_ok=True)
 
