@@ -1,0 +1,25 @@
+name: tedana
+description: |
+    Nuisance regressors were selected according to the 'tedana+aroma' strategy.
+    First, tedana [CITE] was run with custom decision trees for the resting-state and task data.
+    For resting-state data, the "minimal" decision tree was used with a modification to flag any components
+    that fit to the motion regressors as noise.
+    For the task data, the "minimal" decision tree was used with a modification to flag any components
+    that fit to the task regressors as signal and any components that fit to the motion regressors as noise.
+    Finally, the nuisance components were orthogonalized with respect to the
+    signal components not flagged as noise by tedana.
+    This set of orthogonalized nuisance components was selected for the nuisance regression.
+confounds:
+    tedana_confounds:
+        dataset: tedana
+        query:
+            space: null
+            cohort: null
+            res: null
+            den: null
+            desc: confounds
+            extension: .tsv
+            suffix: timeseries
+        columns:
+        # Regular expressions begin with ``^`` and end with ``$``.
+        - ^ICA.*$
