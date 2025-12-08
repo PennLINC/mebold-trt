@@ -120,10 +120,10 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
 
 
 if __name__ == "__main__":
-    raw_dir_ = "/cbica/projects/executivefunction/mebold-trt/dset"
-    fmriprep_dir_ = "/cbica/projects/executivefunction/mebold-trt/derivatives/fmriprep"
-    temp_dir_ = "/cbica/comp_space/executivefunction/tedana_temp"
-    tedana_out_dir_ = "/cbica/projects/executivefunction/mebold-trt/derivatives/tedana"
+    raw_dir_ = "/cbica/projects/executive_function/mebold-trt/dset"
+    fmriprep_dir_ = "/cbica/projects/executive_function/mebold-trt/derivatives/fmriprep"
+    temp_dir_ = "/cbica/comp_space/executive_function/tedana_temp"
+    tedana_out_dir_ = "/cbica/projects/executive_function/mebold-trt/derivatives/tedana"
 
     os.makedirs(temp_dir_, exist_ok=True)
 
