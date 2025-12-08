@@ -106,6 +106,7 @@ if __name__ == "__main__":
             cons_dur_rt_dur_events_df = cons_dur_rt_dur_events_df.sort_values(by="onset")
 
             # ---------- Confounds from TEDANA ----------
+            # XXX: This section is pseudo-code for now
             tedana_classifications = tedana_func_dir / f"{prefix}_desc-tedana_metrics.tsv"
             if not tedana_classifications.exists():
                 print(f"\tTedana classifications file not found for subject: {sub_id} and session: {ses_id}")
