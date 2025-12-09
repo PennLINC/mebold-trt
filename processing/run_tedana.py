@@ -7,7 +7,78 @@ from glob import glob
 import nibabel as nb
 import numpy as np
 import pandas as pd
+from nilearn.glm.first_level import make_first_level_design_matrix
 from tedana.workflows import tedana_workflow
+
+
+MOTION_COLUMNS = ["rot_x", "rot_y", "rot_z", "trans_x", "trans_y", "trans_z"]
+
+
+def events_to_rtdur(events_df):
+    """Implement Jeanette Mumford's ConsDurRTDur model on an events dataframe."""
+    # Limit to 0back and 2back trials
+    events_df = events_df.loc[
+        events_df["trial_type"].str.lower().isin(["0back", "2back"])
+    ].copy()
+    events_df = events_df[["onset", "duration", "trial_type", "response_time"]]
+
+    # Normalize casing then rename to valid Python identifiers
+    events_df["trial_type"] = events_df["trial_type"].str.lower()
+    events_df["trial_type"] = events_df["trial_type"].replace(
+        {
+            "0back": "zero_back",
+            "2back": "two_back",
+        }
+    )
+
+    response_events_df = events_df.loc[~np.isnan(events_df["response_time"])].copy()
+    response_events_df.loc[:, "duration"] = response_events_df.loc[:, "response_time"]
+    response_events_df.loc[:, "trial_type"] = "RTDur"
+
+    cons_dur_rt_dur_events_df = pd.concat((events_df, response_events_df))
+    cons_dur_rt_dur_events_df = cons_dur_rt_dur_events_df.sort_values(by="onset")
+    cons_dur_rt_dur_events_df = cons_dur_rt_dur_events_df.reset_index(drop=True)
+    return cons_dur_rt_dur_events_df
+
+
+def build_motion_confounds(confounds_df, dummy_scans):
+    missing = [c for c in MOTION_COLUMNS if c not in confounds_df.columns]
+    if missing:
+        raise KeyError(f"Missing motion columns in confounds file: {missing}")
+
+    motion_confounds = confounds_df[MOTION_COLUMNS]
+    if dummy_scans:
+        motion_confounds = motion_confounds.iloc[dummy_scans:]
+    return motion_confounds.reset_index(drop=True)
+
+
+def build_fracback_regressors(events_file, frame_times, dummy_scans, tr):
+    events_df = pd.read_table(events_file)
+    events_df = events_to_rtdur(events_df)
+
+    # Align onsets to the truncated (dummy-removed) data
+    events_df = events_df.copy()
+    events_df["onset"] = events_df["onset"] - dummy_scans * tr
+    events_df = events_df.loc[events_df["onset"] >= 0]
+
+    if events_df.empty:
+        zeros = np.zeros((len(frame_times), 3))
+        return pd.DataFrame(zeros, columns=["zero_back", "two_back", "RTDur"])
+
+    design_matrix = make_first_level_design_matrix(
+        frame_times=frame_times,
+        events=events_df,
+        hrf_model="glover",
+        drift_model=None,
+    )
+
+    regressors = pd.DataFrame(index=design_matrix.index)
+    for col in ["zero_back", "two_back", "RTDur"]:
+        if col in design_matrix:
+            regressors[col] = design_matrix[col].to_numpy()
+        else:
+            regressors[col] = 0.0
+    return regressors.reset_index(drop=True)
 
 
 def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
@@ -26,6 +97,8 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
 
     for base_file in base_files:
         raw_files = sorted(glob(base_file.replace("echo-1", "echo-*")))
+        tr = None
+        n_volumes = None
 
         base_filename = os.path.basename(base_file)
         print(f"\t{base_filename}")
@@ -53,7 +126,9 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             f"{mask_base}_part-mag_desc-confounds_timeseries.tsv",
         )
         confounds_df = pd.read_table(confounds_file)
-        nss_cols = [c for c in confounds_df.columns if c.startswith("non_steady_state_outlier")]
+        nss_cols = [
+            c for c in confounds_df.columns if c.startswith("non_steady_state_outlier")
+        ]
 
         dummy_scans = 0
         if nss_cols:
@@ -87,7 +162,11 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
 
             # Remove non-steady-state volumes
             echo_img = nb.load(fmriprep_file)
+            if tr is None:
+                tr = echo_img.header.get_zooms()[3]
             echo_img = echo_img.slicer[:, :, :, dummy_scans:]
+            if n_volumes is None:
+                n_volumes = echo_img.shape[-1]
             temporary_file = os.path.join(
                 temp_dir,
                 os.path.basename(fmriprep_file),
@@ -95,15 +174,49 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             echo_img.to_filename(temporary_file)
             fmriprep_files.append(temporary_file)
 
+        if tr is None or n_volumes is None:
+            raise RuntimeError(
+                f"Unable to determine TR or volume count for {base_filename}"
+            )
+
+        motion_confounds = build_motion_confounds(confounds_df, dummy_scans)
+
+        if len(motion_confounds) != n_volumes:
+            raise ValueError(
+                f"Motion confounds ({len(motion_confounds)}) do not match truncated volumes ({n_volumes})"
+            )
+
+        confounds = motion_confounds
+
+        if "task-fracback" in prefix:
+            events_file = base_file.replace(
+                "_echo-1_part-mag_bold.nii.gz", "_events.tsv"
+            )
+            assert os.path.isfile(events_file), events_file
+
+            frame_times = np.arange(n_volumes) * tr
+            fracback_confounds = build_fracback_regressors(
+                events_file, frame_times, dummy_scans, tr
+            )
+
+            confounds = pd.concat(
+                [motion_confounds.reset_index(drop=True), fracback_confounds], axis=1
+            )
+
         tedana_run_out_dir = os.path.join(tedana_out_dir, subject, session, "func")
         os.makedirs(tedana_run_out_dir, exist_ok=True)
-        if os.path.isfile(os.path.join(tedana_run_out_dir, f"{prefix}_tedana_report.html")):
+        if os.path.isfile(
+            os.path.join(tedana_run_out_dir, f"{prefix}_tedana_report.html")
+        ):
             print(f"DONE: {prefix}")
             continue
 
         tree = "tedana_minimal_rest.json"
         if "task-fracback" in prefix:
             tree = "tedana_minimal_task.json"
+
+        confounds_file = os.path.join(tedana_run_out_dir, f"{prefix}_confounds.tsv")
+        confounds.to_csv(confounds_file, sep="\t", index=False)
 
         tedana_workflow(
             data=fmriprep_files,
@@ -116,6 +229,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             tree=tree,
             gscontrol=["mir"],
             tedort=True,
+            design_matrix=confounds_file,
         )
 
 
