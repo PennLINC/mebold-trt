@@ -229,7 +229,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             tree=tree,
             gscontrol=["mir"],
             tedort=True,
-            design_matrix=confounds_file,
+            external_regressors=confounds_file,
         )
 
 
