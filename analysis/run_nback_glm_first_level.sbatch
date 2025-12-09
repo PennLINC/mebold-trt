@@ -2,7 +2,7 @@
 #SBATCH --job-name=nback_firstlevel
 #SBATCH --output=nback_%A_%a.out
 #SBATCH --error=nback_%A_%a.err
-#SBATCH --array=0-109          # 110 subjects
+#SBATCH --array=0-7          # 8 subjects
 #SBATCH --time=03:00:00
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
