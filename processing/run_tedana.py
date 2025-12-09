@@ -41,25 +41,17 @@ def events_to_rtdur(events_df):
     return cons_dur_rt_dur_events_df
 
 
-def build_motion_confounds(confounds_df, dummy_scans):
+def build_motion_confounds(confounds_df):
     missing = [c for c in MOTION_COLUMNS if c not in confounds_df.columns]
     if missing:
         raise KeyError(f"Missing motion columns in confounds file: {missing}")
 
-    motion_confounds = confounds_df[MOTION_COLUMNS]
-    if dummy_scans:
-        motion_confounds = motion_confounds.iloc[dummy_scans:]
-    return motion_confounds.reset_index(drop=True)
+    return confounds_df[MOTION_COLUMNS].reset_index(drop=True)
 
 
-def build_fracback_regressors(events_file, frame_times, dummy_scans, tr):
+def build_fracback_regressors(events_file, frame_times):
     events_df = pd.read_table(events_file)
     events_df = events_to_rtdur(events_df)
-
-    # Align onsets to the truncated (dummy-removed) data
-    events_df = events_df.copy()
-    events_df["onset"] = events_df["onset"] - dummy_scans * tr
-    events_df = events_df.loc[events_df["onset"] >= 0]
 
     if events_df.empty:
         zeros = np.zeros((len(frame_times), 3))
@@ -164,7 +156,6 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             echo_img = nb.load(fmriprep_file)
             if tr is None:
                 tr = echo_img.header.get_zooms()[3]
-            echo_img = echo_img.slicer[:, :, :, dummy_scans:]
             if n_volumes is None:
                 n_volumes = echo_img.shape[-1]
             temporary_file = os.path.join(
@@ -179,7 +170,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
                 f"Unable to determine TR or volume count for {base_filename}"
             )
 
-        motion_confounds = build_motion_confounds(confounds_df, dummy_scans)
+        motion_confounds = build_motion_confounds(confounds_df)
 
         if len(motion_confounds) != n_volumes:
             raise ValueError(
@@ -195,9 +186,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             assert os.path.isfile(events_file), events_file
 
             frame_times = np.arange(n_volumes) * tr
-            fracback_confounds = build_fracback_regressors(
-                events_file, frame_times, dummy_scans, tr
-            )
+            fracback_confounds = build_fracback_regressors(events_file, frame_times)
 
             confounds = pd.concat(
                 [motion_confounds.reset_index(drop=True), fracback_confounds], axis=1
