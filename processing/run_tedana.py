@@ -46,7 +46,7 @@ def build_motion_confounds(confounds_df):
     if missing:
         raise KeyError(f"Missing motion columns in confounds file: {missing}")
 
-    return confounds_df[MOTION_COLUMNS].reset_index(drop=True)
+    return confounds_df[MOTION_COLUMNS]
 
 
 def build_fracback_regressors(events_file, frame_times):
@@ -64,13 +64,7 @@ def build_fracback_regressors(events_file, frame_times):
         drift_model=None,
     )
 
-    regressors = pd.DataFrame(index=design_matrix.index)
-    for col in ["zero_back", "two_back", "RTDur"]:
-        if col in design_matrix:
-            regressors[col] = design_matrix[col].to_numpy()
-        else:
-            regressors[col] = 0.0
-    return regressors.reset_index(drop=True)
+    return design_matrix
 
 
 def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
