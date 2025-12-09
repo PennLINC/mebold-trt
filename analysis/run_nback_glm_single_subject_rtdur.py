@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from glob import glob
 from pathlib import Path
 
@@ -9,6 +10,9 @@ import pandas as pd
 from nilearn.glm.first_level import FirstLevelModel
 from nilearn.interfaces.bids import save_glm_to_bids
 from scipy.stats import norm
+
+sys.path.append("..")
+from processing.utils import events_to_rtdur
 
 
 if __name__ == "__main__":
@@ -84,26 +88,7 @@ if __name__ == "__main__":
                 continue
 
             events_df = pd.read_table(events_file)
-
-            # Limit to 0back and 2back trials
-            events_df = events_df.loc[events_df["trial_type"].isin(["0back", "2back"])]
-            events_df = events_df[["onset", "duration", "trial_type", "response_time"]]
-
-            # Implement Jeanette Mumford's ConsDurRTDur model
-            # and rename trial types to valid Python identifiers:
-            #   0back -> zero_back
-            #   2back -> two_back
-            events_df["trial_type"] = events_df["trial_type"].replace(
-                {
-                    "0BACK": "zero_back",
-                    "2BACK": "two_back",
-                }
-            )
-            response_events_df = events_df.loc[~np.isnan(events_df["response_time"])].copy()
-            response_events_df.loc[:, "duration"] = response_events_df.loc[:, "response_time"]
-            response_events_df.loc[:, "trial_type"] = "RTDur"
-            cons_dur_rt_dur_events_df = pd.concat((events_df, response_events_df))
-            cons_dur_rt_dur_events_df = cons_dur_rt_dur_events_df.sort_values(by="onset")
+            cons_dur_rt_dur_events_df = events_to_rtdur(events_df)
 
             # ---------- Confounds from TEDANA ----------
             # XXX: This section is pseudo-code for now
