@@ -5,7 +5,7 @@ Code for curating and processing the MEBOLD-TRT dataset.
 ## File organization on CUBIC
 
 ```
-/cbica/projects/executivefunction/mebold-trt/
+/cbica/projects/executive_function/mebold-trt/
     |-  code/           # Local clone of the GitHub repository
         |-  curation/   # Code for curating the dataset
         |-  processing/ # Code for processing the dataset
