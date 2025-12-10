@@ -187,7 +187,11 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             fracback_confounds = build_fracback_regressors(events_file, frame_times)
 
             confounds = pd.concat(
-                [motion_confounds, fracback_confounds], axis=1, ignore_index=True
+                [
+                    motion_confounds.reset_index(drop=True),
+                    fracback_confounds.reset_index(drop=True),
+                ],
+                axis=1,
             )
 
         tedana_run_out_dir = os.path.join(tedana_out_dir, subject, session, "func")
