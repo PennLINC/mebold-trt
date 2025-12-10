@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --array=1-17
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=2
 #SBATCH --mem=24gb
 #SBATCH --time=24:00:00
 # Outputs ----------------------------------
@@ -41,7 +41,7 @@ subject_label=${subject_list[${task_index}]}
 session_label=${session_list[${task_index}]}
 echo "Processing ${subject_label} ${session_label} (task ${SLURM_ARRAY_TASK_ID}/${pair_count})"
 
-cmd="python ${CODE_DIR}/processing/run_tedana.py \
+cmd="python /cbica/projects/executive_function/mebold_trt/github/parker/processing/run_tedana.py \
     --raw-dir ${RAW_DIR} \
     --fmriprep-dir ${FMRIPREP_DIR} \
     --temp-dir ${TEMP_DIR} \
