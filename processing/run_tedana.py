@@ -64,6 +64,8 @@ def build_fracback_regressors(events_file, frame_times):
         drift_model=None,
     )
 
+    design_matrix = design_matrix[["zero_back", "two_back", "RTDur"]]
+
     return design_matrix
 
 
@@ -185,7 +187,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             fracback_confounds = build_fracback_regressors(events_file, frame_times)
 
             confounds = pd.concat(
-                [motion_confounds.reset_index(drop=True), fracback_confounds], axis=1
+                [motion_confounds, fracback_confounds], axis=1, ignore_index=True
             )
 
         tedana_run_out_dir = os.path.join(tedana_out_dir, subject, session, "func")
