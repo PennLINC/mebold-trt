@@ -11,8 +11,15 @@
 #SBATCH --error=/cbica/projects/executive_function/mebold_trt/code/processing/jobs/tedana_%A-%a.err
 # ------------------------------------------
 
-# Override the array range at submit time to match the number of subject-session pairs:
-#   sbatch --array=1-$(find /cbica/projects/executive_function/mebold_trt/ds005250/sub-* -mindepth 1 -maxdepth 1 -type d -name 'ses-*' | wc -l) processing/run_tedana.sbatch
+# After generating the TSV (below), override the array range at submit time to match the
+# number of subject-session pairs:
+#   N=$(python - <<'PY'
+# from pathlib import Path
+# pairs_tsv = Path("/cbica/projects/executive_function/mebold_trt/code/processing/jobs/tedana_pairs.tsv")
+# print(sum(1 for _ in pairs_tsv.open()) - 1)
+# PY
+#   )
+#   sbatch --array=1-${N} processing/run_tedana.sbatch
 
 eval "$(micromamba shell hook --shell bash)"
 micromamba activate meboldtrt
@@ -25,17 +32,32 @@ FMRIPREP_DIR="/cbica/projects/executive_function/mebold_trt/derivatives/nordic_f
 TEMP_DIR="/cbica/comp_space/executive_function/tedana_temp"
 TEDANA_OUT_DIR="/cbica/projects/executive_function/mebold_trt/derivatives/tedana"
 CODE_DIR="/cbica/projects/executive_function/mebold_trt/code"
+PAIRS_TSV="${CODE_DIR}/processing/jobs/tedana_pairs.tsv"
 
 mkdir -p "${TEMP_DIR}"
 mkdir -p "${CODE_DIR}/processing/jobs"
 
-# Build subject-session pairs (e.g., sub-01_ses-1)
-mapfile -t subj_sess_pairs < <(
-  find "${RAW_DIR}"/sub-* -mindepth 1 -maxdepth 1 -type d -name "ses-*" \
-    | awk -F/ '{n=split($0,a,\"/\"); sub=a[n-1]; ses=a[n]; print sub\"_\"ses}' \
-    | sort
-)
-pair_count=${#subj_sess_pairs[@]}
+# Build subject-session TSV (subject<TAB>session), then load it
+python - <<'PY'
+from pathlib import Path
+RAW_DIR = Path("/cbica/projects/executive_function/mebold_trt/ds005250")
+PAIRS_TSV = Path("/cbica/projects/executive_function/mebold_trt/code/processing/jobs/tedana_pairs.tsv")
+pairs = []
+for ses_dir in RAW_DIR.glob("sub-*/ses-*"):
+    if ses_dir.is_dir():
+        pairs.append((ses_dir.parent.name, ses_dir.name))
+pairs = sorted(pairs)
+PAIRS_TSV.parent.mkdir(parents=True, exist_ok=True)
+with PAIRS_TSV.open("w", encoding="utf-8") as f:
+    f.write("subject\tsession\n")
+    for sub, ses in pairs:
+        f.write(f"{sub}\t{ses}\n")
+print(f"Wrote {len(pairs)} rows to {PAIRS_TSV}")
+PY
+
+mapfile -t subject_list < <(tail -n +2 "${PAIRS_TSV}" | cut -f1)
+mapfile -t session_list < <(tail -n +2 "${PAIRS_TSV}" | cut -f2)
+pair_count=${#subject_list[@]}
 
 if [[ ${pair_count} -eq 0 ]]; then
   echo "No subject-session pairs found under ${RAW_DIR}"
@@ -48,9 +70,8 @@ if [[ ${task_index} -lt 0 || ${task_index} -ge ${pair_count} ]]; then
   exit 0
 fi
 
-pair=${subj_sess_pairs[${task_index}]}
-subject_label=${pair%%_*}
-session_label=${pair##*_}
+subject_label=${subject_list[${task_index}]}
+session_label=${session_list[${task_index}]}
 echo "Processing ${subject_label} ${session_label} (task ${SLURM_ARRAY_TASK_ID}/${pair_count})"
 
 cmd="python ${CODE_DIR}/processing/run_tedana.py \
