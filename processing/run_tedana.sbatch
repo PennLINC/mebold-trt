@@ -14,6 +14,9 @@
 # Override the array range at submit time to match the number of subject-session pairs:
 #   sbatch --array=1-$(find /cbica/projects/executive_function/mebold_trt/ds005250/sub-* -mindepth 1 -maxdepth 1 -type d -name 'ses-*' | wc -l) processing/run_tedana.sbatch
 
+eval "$(micromamba shell hook --shell bash)"
+micromamba activate meboldtrt
+
 set -euo pipefail
 pwd; hostname; date
 
