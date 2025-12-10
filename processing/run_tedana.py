@@ -214,6 +214,7 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             tedort=True,
             external_regressors=confounds_file,
         )
+        break  # XXX: test first subject only
 
 
 if __name__ == "__main__":
