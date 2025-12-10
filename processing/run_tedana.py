@@ -74,12 +74,10 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
 
     base_search = os.path.join(
         raw_dir,
-        # "sub-*",
-        "sub-02",  # XXX: second subject has task
+        "sub-*",
         "ses-*",
         "func",
-        # "sub-*_ses-*_echo-1_part-mag_bold.nii.gz",
-        "sub-*_ses-*_task-fracback*_echo-1_part-mag_bold.nii.gz",  # XXX: test task data
+        "sub-*_ses-*_echo-1_part-mag_bold.nii.gz",
     )
     base_files = sorted(glob(base_search))
     if not base_files:
@@ -222,16 +220,13 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             tedort=True,
             external_regressors=confounds_file,
         )
-        break  # XXX: test first subject only
 
 
 if __name__ == "__main__":
     raw_dir_ = "/cbica/projects/executive_function/mebold_trt/ds005250"
     fmriprep_dir_ = "/cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_unzipped/fmriprep"
-    # temp_dir_ = "/cbica/comp_space/executive_function/tedana_temp"
-    temp_dir_ = "/cbica/comp_space/singlest/tedana_temp"
-    # tedana_out_dir_ = "/cbica/projects/executive_function/mebold_trt/derivatives/tedana"
-    tedana_out_dir_ = "/cbica/home/singlest/tedana_out"
+    temp_dir_ = "/cbica/comp_space/executive_function/tedana_temp"
+    tedana_out_dir_ = "/cbica/projects/executive_function/mebold_trt/derivatives/tedana"
 
     os.makedirs(temp_dir_, exist_ok=True)
 
