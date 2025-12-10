@@ -1,5 +1,6 @@
 """Run tedana using fMRIPrep outputs and task regressors."""
 
+import argparse
 import json
 import os
 from glob import glob
@@ -69,13 +70,35 @@ def build_fracback_regressors(events_file, frame_times):
     return design_matrix
 
 
-def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
+def _normalize_session_label(session_label):
+    if session_label is None:
+        return None
+    return session_label if session_label.startswith("ses-") else f"ses-{session_label}"
+
+
+def _normalize_subject_label(subject_label):
+    if subject_label is None:
+        return None
+    return subject_label if subject_label.startswith("sub-") else f"sub-{subject_label}"
+
+
+def run_tedana(
+    raw_dir,
+    fmriprep_dir,
+    temp_dir,
+    tedana_out_dir,
+    session_label=None,
+    subject_label=None,
+):
     print("TEDANA")
+
+    session_glob = _normalize_session_label(session_label) or "ses-*"
+    subject_glob = _normalize_subject_label(subject_label) or "sub-*"
 
     base_search = os.path.join(
         raw_dir,
-        "sub-*",
-        "ses-*",
+        subject_glob,
+        session_glob,
         "func",
         "sub-*_ses-*_echo-1_part-mag_bold.nii.gz",
     )
@@ -219,15 +242,49 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
             gscontrol=["mir"],
             tedort=True,
             external_regressors=confounds_file,
+            tedpca="kic",
         )
 
 
 if __name__ == "__main__":
-    raw_dir_ = "/cbica/projects/executive_function/mebold_trt/ds005250"
-    fmriprep_dir_ = "/cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_unzipped/fmriprep"
-    temp_dir_ = "/cbica/comp_space/executive_function/tedana_temp"
-    tedana_out_dir_ = "/cbica/projects/executive_function/mebold_trt/derivatives/tedana"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--raw-dir",
+        required=True,
+        help="BIDS raw directory (expects sub-*/ses-*/func).",
+    )
+    parser.add_argument(
+        "--fmriprep-dir",
+        required=True,
+        help="fMRIPrep derivatives directory.",
+    )
+    parser.add_argument(
+        "--temp-dir",
+        required=True,
+        help="Directory for temporary files (one per echo).",
+    )
+    parser.add_argument(
+        "--tedana-out-dir",
+        required=True,
+        help="Destination derivatives directory for tedana outputs.",
+    )
+    parser.add_argument(
+        "--session-label",
+        help="Optional session label (with or without 'ses-' prefix) to restrict processing.",
+    )
+    parser.add_argument(
+        "--subject-label",
+        help="Optional subject label (with or without 'sub-' prefix) to restrict processing.",
+    )
+    args = parser.parse_args()
 
-    os.makedirs(temp_dir_, exist_ok=True)
+    os.makedirs(args.temp_dir, exist_ok=True)
 
-    run_tedana(raw_dir_, fmriprep_dir_, temp_dir_, tedana_out_dir_)
+    run_tedana(
+        raw_dir=args.raw_dir,
+        fmriprep_dir=args.fmriprep_dir,
+        temp_dir=args.temp_dir,
+        tedana_out_dir=args.tedana_out_dir,
+        session_label=args.session_label,
+        subject_label=args.subject_label,
+    )
