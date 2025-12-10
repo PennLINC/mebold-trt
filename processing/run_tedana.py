@@ -72,10 +72,12 @@ def run_tedana(raw_dir, fmriprep_dir, temp_dir, tedana_out_dir):
 
     base_search = os.path.join(
         raw_dir,
-        "sub-*",
+        # "sub-*",
+        "sub-02",  # XXX: second subject has task
         "ses-*",
         "func",
-        "sub-*_ses-*_echo-1_part-mag_bold.nii.gz",
+        # "sub-*_ses-*_echo-1_part-mag_bold.nii.gz",
+        "sub-*_ses-*_task-fracback*_echo-1_part-mag_bold.nii.gz",  # XXX: test task data
     )
     base_files = sorted(glob(base_search))
     if not base_files:
