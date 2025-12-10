@@ -16,7 +16,10 @@
         "R2stat nuisance model",
         "R2stat task model"
     ],
-    "intermediate_classifications": ["provisionalaccept", "provisionalreject"],
+    "intermediate_classifications": [
+        "provisionalaccept",
+        "provisionalreject"
+    ],
     "classification_tags": [
         "Likely BOLD",
         "Unlikely BOLD",
@@ -31,7 +34,14 @@
             "report": "External nuisance regressors that fit to components using a linear model were rejected.",
             "detrend": true,
             "statistic": "F",
-            "regressors": ["trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"]
+            "regressors": [
+                "trans_x",
+                "trans_y",
+                "trans_z",
+                "rot_x",
+                "rot_y",
+                "rot_z"
+            ]
         },
         {
             "regress_ID": "task",
@@ -39,14 +49,24 @@
             "report": "Task regressors that fit to components using a linear model and have some T2* weighting were accepted even if they would have been rejected base on other criteriea.",
             "detrend": true,
             "statistic": "F",
-            "regressors": ["0back", "2back", "RTDur"]
+            "regressors": [
+                "zero_back",
+                "two_back",
+                "RTDur"
+            ]
         }
     ],
     "nodes": [
         {
             "functionname": "manual_classify",
-            "parameters": {"new_classification": "unclassified", "decide_comps": "all"},
-            "kwargs": {"clear_classification_tags": true, "dont_warn_reclassify": true}
+            "parameters": {
+                "new_classification": "unclassified",
+                "decide_comps": "all"
+            },
+            "kwargs": {
+                "clear_classification_tags": true,
+                "dont_warn_reclassify": true
+            }
         },
         {
             "functionname": "dec_left_op_right",
@@ -58,7 +78,9 @@
                 "left": "rho",
                 "right": "kappa"
             },
-            "kwargs": {"tag_if_true": "Unlikely BOLD"}
+            "kwargs": {
+                "tag_if_true": "Unlikely BOLD"
+            }
         },
         {
             "functionname": "dec_left_op_right",
@@ -121,12 +143,16 @@
         },
         {
             "functionname": "calc_kappa_elbow",
-            "parameters": {"decide_comps": "all"},
+            "parameters": {
+                "decide_comps": "all"
+            },
             "_comment": ""
         },
         {
             "functionname": "calc_rho_elbow",
-            "parameters": {"decide_comps": "all"},
+            "parameters": {
+                "decide_comps": "all"
+            },
             "kwargs": {
                 "subset_decide_comps": "unclassified",
                 "rho_elbow_type": "liberal",
@@ -196,7 +222,9 @@
             "parameters": {
                 "if_true": "accepted",
                 "if_false": "nochange",
-                "decide_comps": ["provisionalreject"],
+                "decide_comps": [
+                    "provisionalreject"
+                ],
                 "op": "<",
                 "left": "pval task model",
                 "right": 0.05
@@ -228,16 +256,26 @@
         },
         {
             "functionname": "manual_classify",
-            "parameters": {"new_classification": "accepted", "decide_comps": "provisionalaccept"},
-            "kwargs": {"tag": "Likely BOLD"}
+            "parameters": {
+                "new_classification": "accepted",
+                "decide_comps": "provisionalaccept"
+            },
+            "kwargs": {
+                "tag": "Likely BOLD"
+            }
         },
         {
             "functionname": "manual_classify",
             "parameters": {
                 "new_classification": "rejected",
-                "decide_comps": ["provisionalreject", "unclassified"]
+                "decide_comps": [
+                    "provisionalreject",
+                    "unclassified"
+                ]
             },
-            "kwargs": {"tag": "Unlikely BOLD"}
+            "kwargs": {
+                "tag": "Unlikely BOLD"
+            }
         }
     ]
 }
