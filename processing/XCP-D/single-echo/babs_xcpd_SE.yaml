@@ -1,0 +1,57 @@
+
+# Define the input datasets
+input_datasets:
+    fmriprep:
+        is_zipped: true
+        origin_url: "/cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_zipped_ephe"
+        unzipped_path_containing_subject_dirs: "fmriprep"
+        path_in_babs: inputs/data/fmriprep
+
+# Arguments in `singularity run`:
+bids_app_args:
+    $SUBJECT_SELECTION_FLAG: "--participant-label"
+    -w: "$BABS_TMPDIR"
+    --stop-on-first-crash: ""
+    --fs-license-file: "/cbica/software/external/freesurfer/centos7/5.3.0/license.txt" # [FIX ME] path to FreeSurfer license file
+    -vv: ""
+    --mode: "linc"
+    --input-type: "fmriprep"
+    --nthreads: "4"
+    --omp-nthreads: "4"
+    --mem-mb: "60000"
+    --dummy-scans: "auto"
+
+# Arguments that are passed directly to singularity/apptainer:
+singularity_args:
+    - --containall
+    - --writable-tmpfs
+
+# Output foldername(s) to be zipped, and the BIDS App version to be included in the zip filename(s):
+#   As fMRIPrep will use BIDS output layout, we need to ask BABS to create a folder 'xcpd' to wrap all derivatives:
+all_results_in_one_zip: true
+zip_foldernames:
+    xcpd: "0-13-0" # folder 'xcpd' will be zipped into 'sub-xx_(ses-yy_)xcpd-0-13-0.zip'
+
+# How much cluster resources it needs:
+cluster_resources:
+    interpreting_shell: "/bin/bash"
+    hard_runtime_limit: "7:00:00"
+    temporary_disk_space: 200G
+    customized_text: |
+        #SBATCH -p all
+        #SBATCH --nodes=1
+        #SBATCH --ntasks=1
+        #SBATCH --cpus-per-task=4
+        #SBATCH --mem=60G
+        #SBATCH --propagate=NONE
+
+# Necessary commands to be run first:
+#   [FIX ME] change or add commands for setting up the virtual environment, for loading necessary modules, etc
+script_preamble: |
+    eval "$(micromamba shell hook --shell bash)"
+    micromamba activate babs
+
+# Where to run the jobs:
+job_compute_space: "${TMP}" # [FIX ME] replace "/path/to/temporary_compute_space" with yours
+
+
