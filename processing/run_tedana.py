@@ -243,6 +243,7 @@ def run_tedana(
             tedort=True,
             external_regressors=confounds_file,
             tedpca="mdl",
+            dummy_scans=dummy_scans,
         )
         mixing = os.path.join(tedana_run_out_dir, f"{prefix}_desc-ICAOrth_mixing.tsv")
         mixing_df = pd.read_table(mixing)
