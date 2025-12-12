@@ -200,7 +200,8 @@ def run_tedana(
 
         if "task-fracback" in prefix:
             events_file = base_file.replace(
-                "_echo-1_part-mag_bold.nii.gz", "_events.tsv"
+                "_echo-1_part-mag_bold.nii.gz",
+                "_events.tsv",
             )
             assert os.path.isfile(events_file), events_file
 
@@ -239,11 +240,25 @@ def run_tedana(
             fittype="curvefit",
             combmode="t2s",
             tree=tree,
-            gscontrol=["mir"],
             tedort=True,
             external_regressors=confounds_file,
-            tedpca="kic",
+            tedpca="mdl",
         )
+        mixing = os.path.join(tedana_run_out_dir, f"{prefix}_desc-ICAOrth_mixing.tsv")
+        mixing_df = pd.read_table(mixing)
+        metrics = os.path.join(tedana_run_out_dir, f"{prefix}_desc-tedana_metrics.tsv")
+        metrics_df = pd.read_table(metrics, index_col="Component")
+        comps_rejected = metrics_df[metrics_df["classification"] == "rejected"].index.tolist()
+        mixing_df = mixing_df[comps_rejected]
+        if dummy_scans > 0:
+            # Add dummy volumes to the rejected array
+            rejected_arr = mixing_df.to_numpy()
+            dummy_arr = np.zeros((dummy_scans, rejected_arr.shape[1]))
+            rejected_arr = np.concatenate((dummy_arr, rejected_arr), axis=0)
+            mixing_df = pd.DataFrame(rejected_arr, columns=mixing_df.columns)
+
+        out_confounds = os.path.join(tedana_run_out_dir, f"{prefix}_desc-rejected_timeseries.tsv")
+        mixing_df.to_csv(out_confounds, sep="\t", index=False)
 
 
 if __name__ == "__main__":

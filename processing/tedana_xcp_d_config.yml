@@ -17,7 +17,7 @@ confounds:
             cohort: null
             res: null
             den: null
-            desc: confounds
+            desc: rejected
             extension: .tsv
             suffix: timeseries
         columns:
