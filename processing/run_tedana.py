@@ -85,7 +85,6 @@ def _normalize_subject_label(subject_label):
 def run_tedana(
     raw_dir,
     fmriprep_dir,
-    temp_dir,
     tedana_out_dir,
     session_label=None,
     subject_label=None,
@@ -170,6 +169,7 @@ def run_tedana(
                 f"{base_query}_desc-preproc_bold.nii.gz",
             )
             assert os.path.isfile(fmriprep_file), fmriprep_file
+            fmriprep_files.append(fmriprep_file)
 
             # Remove non-steady-state volumes
             echo_img = nb.load(fmriprep_file)
@@ -177,12 +177,6 @@ def run_tedana(
                 tr = echo_img.header.get_zooms()[3]
             if n_volumes is None:
                 n_volumes = echo_img.shape[-1]
-            temporary_file = os.path.join(
-                temp_dir,
-                os.path.basename(fmriprep_file),
-            )
-            echo_img.to_filename(temporary_file)
-            fmriprep_files.append(temporary_file)
 
         if tr is None or n_volumes is None:
             raise RuntimeError(
@@ -275,11 +269,6 @@ if __name__ == "__main__":
         help="fMRIPrep derivatives directory.",
     )
     parser.add_argument(
-        "--temp-dir",
-        required=True,
-        help="Directory for temporary files (one per echo).",
-    )
-    parser.add_argument(
         "--tedana-out-dir",
         required=True,
         help="Destination derivatives directory for tedana outputs.",
@@ -294,12 +283,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    os.makedirs(args.temp_dir, exist_ok=True)
-
     run_tedana(
         raw_dir=args.raw_dir,
         fmriprep_dir=args.fmriprep_dir,
-        temp_dir=args.temp_dir,
         tedana_out_dir=args.tedana_out_dir,
         session_label=args.session_label,
         subject_label=args.subject_label,

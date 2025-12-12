@@ -19,12 +19,10 @@ pwd; hostname; date
 
 RAW_DIR="/cbica/projects/executive_function/mebold_trt/ds005250"
 FMRIPREP_DIR="/cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_unzipped/fmriprep"
-TEMP_DIR="/cbica/comp_space/executive_function/tedana_temp"
 TEDANA_OUT_DIR="/cbica/projects/executive_function/mebold_trt/derivatives/tedana"
 CODE_DIR="/cbica/projects/executive_function/mebold_trt/code"
 PAIRS_TSV="${CODE_DIR}/processing/jobs/tedana_pairs.tsv"
 
-mkdir -p "${TEMP_DIR}"
 mkdir -p "${CODE_DIR}/processing/jobs"
 
 mapfile -t subject_list < <(tail -n +2 "${PAIRS_TSV}" | cut -f1)
@@ -44,7 +42,6 @@ echo "Processing ${subject_label} ${session_label} (task ${SLURM_ARRAY_TASK_ID}/
 cmd="python /cbica/projects/executive_function/mebold_trt/github/parker/processing/run_tedana.py \
     --raw-dir ${RAW_DIR} \
     --fmriprep-dir ${FMRIPREP_DIR} \
-    --temp-dir ${TEMP_DIR} \
     --tedana-out-dir ${TEDANA_OUT_DIR} \
     --session-label ${session_label} \
     --subject-label ${subject_label}"
@@ -57,4 +54,3 @@ echo "session-${session_label}   ${SLURM_ARRAY_TASK_ID}    ${exitcode}" \
       >> ${CODE_DIR}/processing/jobs/"${SLURM_JOB_NAME}"."${SLURM_ARRAY_JOB_ID}".tsv
 echo "Finished task ${SLURM_ARRAY_TASK_ID} with exit code ${exitcode}"
 exit ${exitcode}
-
