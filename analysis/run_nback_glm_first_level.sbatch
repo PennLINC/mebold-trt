@@ -26,4 +26,4 @@ echo "SLURM_ARRAY_TASK_ID: $SLURM_ARRAY_TASK_ID"
 # --------------------------
 # RUN FIRST-LEVEL SCRIPT
 # --------------------------
-python /cbica/projects/executive_function/mebold-trt/code/analysis/run_nback_glm_single_subject.py $SUB_ID
+python /cbica/projects/executive_function/mebold_trt/github/parker/analysis/run_nback_glm_single_subject.py $SUB_ID

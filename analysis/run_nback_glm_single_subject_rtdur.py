@@ -17,14 +17,14 @@ from processing.utils import events_to_rtdur
 
 if __name__ == "__main__":
     # ---------- CONFIG ----------
-    bids_root = Path("/cbica/projects/executive_function/mebold-trt/dset")
-    derivatives_dir = Path("/cbica/projects/executive_function/mebold-trt/derivatives")
+    bids_root = Path("/cbica/projects/executive_function/mebold_trt/dset")
+    derivatives_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives")
     fmriprep_dir = derivatives_dir / "fmriprep"
     tedana_dir = derivatives_dir / "tedana"
-    out_dir = Path("/cbica/projects/executive_function/mebold-trt/derivatives/fracback")
+    out_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives/fracback")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    subject_dirs = sorted(glob("/cbica/projects/executive_function/mebold-trt/dset/sub-*"))
+    subject_dirs = sorted(glob("/cbica/projects/executive_function/mebold_trt/dset/sub-*"))
     for subject_dir in subject_dirs:
         sub_id = os.path.basename(subject_dir).split("-")[1]
         session_dirs = sorted(glob(f"{subject_dir}/ses-*"))

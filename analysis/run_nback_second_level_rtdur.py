@@ -13,7 +13,7 @@ from nilearn.image import load_img
 # CONFIG
 # ----------------------------------------------------------
 # First-level output root
-firstlevel_dir = Path("/cbica/projects/executive_function/mebold-trt/derivatives/fracback")
+firstlevel_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives/fracback")
 
 # Where to write second-level outputs
 group_out_dir = firstlevel_dir / "group-all"
