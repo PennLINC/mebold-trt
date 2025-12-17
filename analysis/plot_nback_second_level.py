@@ -15,7 +15,7 @@ if __name__ == "__main__":
     )
     plotting.plot_stat_map(
         in_file,
-        bg_img=bg_img,
+        #bg_img=bg_img,
         display_mode="mosaic",
         threshold=1.96,
         colorbar=True,
