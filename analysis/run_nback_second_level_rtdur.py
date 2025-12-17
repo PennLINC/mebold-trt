@@ -54,7 +54,10 @@ for subject_dir in subject_dirs:
     for ses_id in ses_ids:
         effect_map = subject_dir / ses_id / "func" / pattern.format(sub_id=sub_id, ses_id=ses_id)
         if not effect_map.exists():
-            print(f"No first-level maps found for subject: {sub_id} and session: {ses_id}")
+            print(
+                f"No first-level maps found for subject: {sub_id} and session: {ses_id}\n"
+                f"\t{effect_map}"
+            )
             sessions_found = False
             continue
 
