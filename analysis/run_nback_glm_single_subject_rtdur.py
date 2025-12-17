@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
             # ---------- Preprocessed data from fMRIPrep ----------
             preproc_file = (
-                fmriprep_func_dir / f"{prefix}_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
+                fmriprep_func_dir / f"{prefix}_part-mag_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
             )
             if not preproc_file.exists():
                 print(
@@ -56,7 +56,7 @@ if __name__ == "__main__":
             t_r = preproc_json_data["RepetitionTime"]
             slice_time_ref = preproc_json_data["StartTime"]
 
-            mask_file = fmriprep_func_dir / f"{prefix}_space-MNI152NLin6Asym_res-2_desc-brain_mask.nii.gz"
+            mask_file = fmriprep_func_dir / f"{prefix}_part-mag_space-MNI152NLin6Asym_res-2_desc-brain_mask.nii.gz"
             if not mask_file.exists():
                 print(f"\tMask file not found for subject: {sub_id} and session: {ses_id}")
                 continue
@@ -64,7 +64,7 @@ if __name__ == "__main__":
             mask_img = str(mask_file)
 
             # ---------- Dummy volumes from fMRIPrep ----------
-            confounds_file = fmriprep_func_dir / f"{prefix}_desc-confounds_timeseries.tsv"
+            confounds_file = fmriprep_func_dir / f"{prefix}_part-mag_desc-confounds_timeseries.tsv"
             if not confounds_file.exists():
                 print(f"\tConfounds file not found for subject: {sub_id} and session: {ses_id}")
                 continue
@@ -94,20 +94,11 @@ if __name__ == "__main__":
             cons_dur_rt_dur_events_df = events_to_rtdur(events_df)
 
             # ---------- Confounds from TEDANA ----------
-            # XXX: This section is pseudo-code for now
-            tedana_classifications = tedana_func_dir / f"{prefix}_desc-tedana_metrics.tsv"
-            if not tedana_classifications.exists():
+            tedana_confounds = tedana_func_dir / f"{prefix}_desc-rejected_timeseries.tsv"
+            if not tedana_confounds.exists():
                 print(f"\tTedana classifications file not found for subject: {sub_id} and session: {ses_id}")
                 continue
-            tedana_df = pd.read_table(tedana_classifications)
-
-            mixing_file = tedana_func_dir / f"{prefix}_desc-ICAOrth_mixing.tsv"
-            if not mixing_file.exists():
-                print(f"\tTedana mixing file not found for subject: {sub_id} and session: {ses_id}")
-                continue
-            mixing_df = pd.read_table(mixing_file)
-            noise_components = [c for c in tedana_df['Component'].tolist() if tedana_df['Component'][c] == 'noise']
-            confounds_df = mixing_df[noise_components]
+            confounds_df = pd.read_table(tedana_confounds)
 
             # ---------- Remove dummy volumes if necessary ----------
             if dummy_scans > 0:
