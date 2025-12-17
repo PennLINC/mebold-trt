@@ -158,8 +158,8 @@ model = model.fit(
 # ----------------------------------------------------------
 # SAVE OUTPUTS IN BIDS-LIKE FORMAT
 # ----------------------------------------------------------
-group_contrast_name = "twoBackMinusZeroBack"
-contrasts = {group_contrast_name: "intercept"}
+group_contrast_name = "ses1MinusSes2"
+contrasts = {group_contrast_name: "ses-1 - ses-2"}
 
 save_glm_to_bids(
     model=model,
