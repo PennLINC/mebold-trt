@@ -124,7 +124,6 @@ save_glm_to_bids(
     height_control=None,        # treat threshold as Z, not p
     cluster_threshold=10,
     bg_img=bg_img,              # <-- same bg as first level
-    two_sided=True,             # <-- forward to generate_report(two_sided=True)
 )
 
 print(f"\nSaved second-level BIDS-like outputs to:\n  {group_out_dir}\n")
