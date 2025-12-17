@@ -41,7 +41,7 @@ prepost_dm = []
 effect_maps = []
 
 pattern = (
-    "{sub_id}_{ses_id}_task-fracback_"
+    "{sub_id}_{ses_id}_task-fracback_acq-MBME_"
     "contrast-twoBackMinusZeroBack_stat-effect_statmap.nii.gz"
 )
 
