@@ -133,13 +133,14 @@ if __name__ == "__main__":
             print("\t\t", design_matrix.columns)
             print(f"\tTotal # regressors in design matrix: {design_matrix.shape[1]}")
 
+            func_out_dir = out_dir / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
+            func_out_dir.mkdir(parents=True, exist_ok=True)
             save_glm_to_bids(
                 model,
                 contrasts="two_back - zero_back",
                 contrast_types={"two_back - zero_back": "t"},
-                out_dir=out_dir,
-                threshold=norm.isf(0.001),
-                cluster_threshold=10,
+                out_dir=func_out_dir,
+                prefix=prefix,
                 bg_img=(
                     "/cbica/projects/executive_function/.cache/templateflow/"
                     "tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-02_T1w.nii.gz"
