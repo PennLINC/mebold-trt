@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from pathlib import Path
 
+import nibabel as nb
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
@@ -103,6 +104,7 @@ model = SecondLevelModel(
     mask_img=group_mask_img,
     minimize_memory=False
 )
+effect_maps = [nb.load(effect_map) for effect_map in effect_maps]
 model = model.fit(
     second_level_input=effect_maps,
     design_matrix=design_matrix,
