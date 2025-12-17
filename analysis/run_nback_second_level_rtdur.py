@@ -101,6 +101,7 @@ for mask_file in enumerate(mask_files):
     mask_data = mask_img.get_fdata().astype(bool)
     group_mask_data = group_mask_data * mask_data
 group_mask_img = nb.Nifti1Image(group_mask_data, mask_img.affine, mask_img.header)
+group_mask_img.to_filename(group_out_dir / "mask.nii.gz")
 
 # ----------------------------------------------------------
 # ANALYSIS 1: ONE-SAMPLE T-TEST
