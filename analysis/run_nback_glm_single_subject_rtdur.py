@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # ---------- CONFIG ----------
     bids_root = Path("/cbica/projects/executive_function/mebold_trt/ds005250")
     derivatives_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives")
-    fmriprep_dir = derivatives_dir / "fmriprep"
+    fmriprep_dir = derivatives_dir / "nordic_fmriprep_unzipped" / "fmriprep"
     tedana_dir = derivatives_dir / "tedana"
     out_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives/fracback")
     out_dir.mkdir(parents=True, exist_ok=True)
