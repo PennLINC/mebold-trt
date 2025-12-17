@@ -119,7 +119,6 @@ if __name__ == "__main__":
                 smoothing_fwhm=5,
                 noise_model="ar1",
                 minimize_memory=False,
-                subject_label=sub_id,
             )
             model = model.fit(
                 run_imgs=preproc_img,
