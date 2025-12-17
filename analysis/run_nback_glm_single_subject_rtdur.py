@@ -42,7 +42,10 @@ if __name__ == "__main__":
                 fmriprep_func_dir / f"{prefix}_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
             )
             if not preproc_file.exists():
-                print(f"\tPreprocessed file not found for subject: {sub_id} and session: {ses_id}")
+                print(
+                    f"\tPreprocessed file not found for subject: {sub_id} and session: {ses_id}\n"
+                    f"\t{preproc_file}"
+                )
                 continue
 
             preproc_img = nb.load(preproc_file)
