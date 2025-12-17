@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 from glob import glob
 from pathlib import Path
@@ -9,7 +10,6 @@ import numpy as np
 import pandas as pd
 from nilearn.glm.first_level import FirstLevelModel
 from nilearn.interfaces.bids import save_glm_to_bids
-from scipy.stats import norm
 
 sys.path.append("..")
 from processing.utils import events_to_rtdur
@@ -146,5 +146,18 @@ if __name__ == "__main__":
                 ),
             )
             print(f"\tDone fitting GLM for subject: {sub_id} and session: {ses_id}")
+
+            # Post-Nilearn cleanup
+            nilearn_func_out_dir = func_out_dir / f"sub-{sub_id}"
+            dataset_description_file = out_dir / "dataset_description.json"
+            if not dataset_description_file.exists():
+                nilearn_dataset_description_file = func_out_dir / "dataset_description.json"
+                shutil.copyfile(nilearn_dataset_description_file, dataset_description_file)
+
+            os.remove(nilearn_dataset_description_file)
+            # Move contents of nilearn_func_out_dir to func_out_dir
+            for item in nilearn_func_out_dir.iterdir():
+                shutil.move(item, func_out_dir / item.name)
+            nilearn_func_out_dir.rmdir()
 
     print("\n----\nDONE\n----\n")
