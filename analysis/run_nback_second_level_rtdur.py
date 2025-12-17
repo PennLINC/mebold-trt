@@ -96,7 +96,7 @@ for p in effect_maps:
     print("  ", p)
 
 # Build mask from intersection of all masks
-for mask_file in enumerate(mask_files):
+for mask_file in mask_files:
     mask_img = nb.load(mask_file)
     mask_data = mask_img.get_fdata().astype(bool)
     group_mask_data = group_mask_data * mask_data
