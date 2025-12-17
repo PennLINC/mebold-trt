@@ -14,8 +14,8 @@ def events_to_rtdur(events_df):
     #   2back -> two_back
     events_df["trial_type"] = events_df["trial_type"].replace(
         {
-            "0BACK": "zero_back",
-            "2BACK": "two_back",
+            "0back": "zero_back",
+            "2back": "two_back",
         }
     )
     response_events_df = events_df.loc[~np.isnan(events_df["response_time"])].copy()
