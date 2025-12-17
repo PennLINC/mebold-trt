@@ -112,7 +112,6 @@ if __name__ == "__main__":
                 t_r=t_r,
                 slice_time_ref=slice_time_ref,
                 hrf_model="glover",
-                drift_model="cosine",
                 high_pass=None,
                 mask_img=mask_img,
                 smoothing_fwhm=5,
