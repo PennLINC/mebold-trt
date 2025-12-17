@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
             preproc_img = nb.load(preproc_file)
 
-            preproc_json = preproc_file.replace(".nii.gz", ".json")
+            preproc_json = str(preproc_file).replace(".nii.gz", ".json")
             with open(preproc_json, "r") as f:
                 preproc_json_data = json.load(f)
             t_r = preproc_json_data["RepetitionTime"]
