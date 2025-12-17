@@ -7,7 +7,7 @@ if __name__ == "__main__":
     in_file = (
         "/cbica/projects/executive_function/mebold_trt/"
         "derivatives/fracback/group-all/group/"
-        "model-onesample_contrast-twobackminuszeroback_stat-effect_statmap.nii.gz"
+        "model-onesample_contrast-twobackminuszeroback_stat-z_statmap.nii.gz"
     )
     bg_img = (
         "/cbica/projects/executive_function/.cache/templateflow/"
@@ -17,7 +17,7 @@ if __name__ == "__main__":
         in_file,
         bg_img=bg_img,
         display_mode="mosaic",
-        threshold=0.5,
+        threshold=1.96,
         colorbar=True,
         symmetric_cbar=True,
         draw_cross=False,
