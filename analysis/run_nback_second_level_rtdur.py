@@ -120,9 +120,7 @@ save_glm_to_bids(
     model=model,
     contrasts=contrasts,
     out_dir=group_out_dir,
-    threshold=norm.isf(0.001),  # Z ~ 3.09
-    height_control=None,        # treat threshold as Z, not p
-    cluster_threshold=10,
+    prefix="model-onesample_",
     bg_img=bg_img,              # <-- same bg as first level
 )
 
@@ -165,9 +163,7 @@ save_glm_to_bids(
     model=model,
     contrasts=contrasts,
     out_dir=group_out_dir,
-    threshold=norm.isf(0.001),  # Z ~ 3.09
-    height_control=None,        # treat threshold as Z, not p
-    cluster_threshold=10,
+    prefix="model-paired_",
     bg_img=bg_img,              # <-- same bg as first level
 )
 
