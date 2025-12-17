@@ -66,7 +66,7 @@ for subject_dir in subject_dirs:
         subject_list.append(sub_id)
 
 map_labels = []
-design_matrix_labels = ["ses-1", "ses-2"] + subject_list
+design_matrix_labels = ["ses1", "ses2"] + [s.replace("-", "") for s in subject_list]
 ses_ids = ["ses-1", "ses-2"]
 for ses_id in ses_ids:
     subject_effect = np.eye(len(subject_list))
@@ -159,7 +159,7 @@ model = model.fit(
 # SAVE OUTPUTS IN BIDS-LIKE FORMAT
 # ----------------------------------------------------------
 group_contrast_name = "ses1MinusSes2"
-contrasts = {group_contrast_name: "ses-1 - ses-2"}
+contrasts = {group_contrast_name: "ses1 - ses2"}
 
 save_glm_to_bids(
     model=model,
