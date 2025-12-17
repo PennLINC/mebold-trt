@@ -8,8 +8,24 @@ description: |
     that fit to the task regressors as signal and any components that fit to the motion regressors as noise.
     Finally, the nuisance components were orthogonalized with respect to the
     signal components not flagged as noise by tedana.
-    This set of orthogonalized nuisance components was selected for the nuisance regression.
+    This set of orthogonalized nuisance components was selected for the nuisance regression,
+    along with mean white matter signal, mean cerebrospinal fluid signal, and mean global signal
+    [@benchmarkp;@satterthwaite_2013].
 confounds:
+    preproc_confounds:
+        dataset: preprocessed
+        query:
+            space: null
+            cohort: null
+            res: null
+            den: null
+            desc: confounds
+            extension: .tsv
+            suffix: timeseries
+        columns:
+        - global_signal
+        - csf
+        - white_matter
     tedana_confounds:
         dataset: tedana
         query:
