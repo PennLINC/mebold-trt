@@ -22,6 +22,7 @@ if __name__ == "__main__":
     }
     network_labels = dseg_df["network_label"].fillna(dseg_df["atlas_name"]).tolist()
     network_labels = [atlas_mapper.get(network, network) for network in network_labels]
+    node_labels = dseg_df["label"].tolist()
 
     # Determine order of nodes while retaining original order of networks
     unique_labels = []
@@ -35,6 +36,7 @@ if __name__ == "__main__":
 
     # Get the community name associated with each network
     labels = np.array(network_labels)[community_order]
+    node_labels = np.array(node_labels)[community_order]
     unique_labels = sorted(set(labels))
     unique_labels = []
     for label in labels:
@@ -83,6 +85,8 @@ if __name__ == "__main__":
             np.fill_diagonal(mean_arr_z, 0)
 
             mean_arr_r = np.tanh(mean_arr_z)
+            arr_df = pd.DataFrame(data=mean_arr_r, index=node_labels, columns=node_labels)
+            arr_df.to_csv(f"../data/XCPD_acq-{acq}_Mean.tsv", sep="\t", index_label="Node")
 
             fig, ax = plt.subplots(figsize=(10, 10))
             ax.imshow(mean_arr_r, cmap="seismic", vmin=-1, vmax=1)
