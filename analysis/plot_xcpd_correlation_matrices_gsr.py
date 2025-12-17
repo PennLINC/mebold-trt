@@ -10,7 +10,7 @@ import pandas as pd
 
 if __name__ == "__main__":
     dseg_file = (
-        "/cbica/projects/executive_function/mebold-trt/derivatives/xcp_d/atlases/atlas-4S156Parcels/"
+        "/cbica/projects/executive_function/mebold_trt/derivatives/xcpd_ME_unzipped/xcpd/atlases/atlas-4S156Parcels/"
         "atlas-4S156Parcels_dseg.tsv"
     )
     dseg_df = pd.read_table(dseg_file)
@@ -59,8 +59,11 @@ if __name__ == "__main__":
 
     corrmats = sorted(
         glob(
-            "/cbica/projects/executive_function/mebold-trt/derivatives/xcp_d/sub-*/ses-*/func/"
-            "*seg-4S156Parcels_stat-pearsoncorrelation_relmat.tsv"
+            "/cbica/projects/executive_function/mebold_trt/derivatives/xcpd_ME_unzipped/xcpd/"
+            "sub-*/ses-*/func/*seg-4S156Parcels_stat-pearsoncorrelation_relmat.tsv"
+        ) + glob(
+            "/cbica/projects/executive_function/mebold_trt/derivatives/xcpd_SE_unzipped/xcpd/"
+            "sub-*/ses-*/func/*seg-4S156Parcels_stat-pearsoncorrelation_relmat.tsv"
         )
     )
     for acq in ["MBME", "MBSE"]:
