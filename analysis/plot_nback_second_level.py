@@ -16,7 +16,7 @@ if __name__ == "__main__":
     )
     bg_img = (
         "/cbica/projects/executive_function/.cache/templateflow/"
-        "tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-02_T1w.nii.gz"
+        "tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-02_desc-brain_T1w.nii.gz"
     )
     bg_img = nb.load(bg_img)
     bg_img = reorder_img(bg_img)
