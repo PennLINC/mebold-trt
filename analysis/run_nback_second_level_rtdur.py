@@ -28,6 +28,11 @@ bg_img = load_img(
     "/cbica/projects/executive_function/.cache/templateflow/tpl-MNI152NLin6Asym/"
     "tpl-MNI152NLin6Asym_res-02_desc-brain_T1w.nii.gz"
 )
+base_mask = nb.load(
+    "/cbica/projects/executive_function/.cache/templateflow/tpl-MNI152NLin6Asym/"
+    "tpl-MNI152NLin6Asym_res-02_desc-brain_mask.nii.gz"
+)
+group_mask_data = base_mask.get_fdata().astype(bool)
 
 # ----------------------------------------------------------
 # COLLECT FIRST-LEVEL EFFECT SIZE MAPS
@@ -91,13 +96,10 @@ for p in effect_maps:
     print("  ", p)
 
 # Build mask from intersection of all masks
-for i_mask, mask_file in enumerate(mask_files):
+for mask_file in enumerate(mask_files):
     mask_img = nb.load(mask_file)
     mask_data = mask_img.get_fdata().astype(bool)
-    if i_mask == 0:
-        group_mask_data = mask_data
-    else:
-        group_mask_data = group_mask_data * mask_data
+    group_mask_data = group_mask_data * mask_data
 group_mask_img = nb.Nifti1Image(group_mask_data, mask_img.affine, mask_img.header)
 
 # ----------------------------------------------------------
