@@ -17,7 +17,7 @@ if __name__ == "__main__":
         in_file,
         bg_img=bg_img,
         display_mode="mosaic",
-        threshold=None,
+        threshold=0.01,
         colorbar=True,
         symmetric_cbar=True,
         draw_cross=False,
