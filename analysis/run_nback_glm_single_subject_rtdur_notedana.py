@@ -20,8 +20,7 @@ if __name__ == "__main__":
     bids_root = Path("/cbica/projects/executive_function/mebold_trt/ds005250")
     derivatives_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives")
     fmriprep_dir = derivatives_dir / "nordic_fmriprep_unzipped" / "fmriprep"
-    tedana_dir = derivatives_dir / "tedana"
-    out_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives/fracback")
+    out_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives/fracback_notedana")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     subject_dirs = sorted(bids_root.glob("sub-*"))
@@ -34,7 +33,6 @@ if __name__ == "__main__":
 
             bids_func_dir = bids_root / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
             fmriprep_func_dir = fmriprep_dir / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
-            tedana_func_dir = tedana_dir / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
             prefix = f"sub-{sub_id}_ses-{ses_id}_task-fracback_acq-MBME"
 
             # ---------- Preprocessed data from fMRIPrep ----------
@@ -69,13 +67,13 @@ if __name__ == "__main__":
                 print(f"\tConfounds file not found for subject: {sub_id} and session: {ses_id}")
                 continue
 
-            fmriprep_confounds_df = pd.read_table(confounds_file)
+            confounds_df = pd.read_table(confounds_file)
             # Infer the number of dummy volumes from the confounds dataframe
-            nss_cols = [c for c in fmriprep_confounds_df.columns if c.startswith("non_steady_state_outlier")]
+            nss_cols = [c for c in confounds_df.columns if c.startswith("non_steady_state_outlier")]
 
             dummy_scans = 0
             if nss_cols:
-                initial_volumes_df = fmriprep_confounds_df[nss_cols]
+                initial_volumes_df = confounds_df[nss_cols]
                 dummy_scans = np.any(initial_volumes_df.to_numpy(), axis=1)
                 dummy_scans = np.where(dummy_scans)[0]
 
@@ -93,19 +91,15 @@ if __name__ == "__main__":
             events_df = pd.read_table(events_file)
             cons_dur_rt_dur_events_df = events_to_rtdur(events_df)
 
-            # ---------- Confounds from TEDANA ----------
-            tedana_confounds = tedana_func_dir / f"{prefix}_desc-rejected_timeseries.tsv"
-            if not tedana_confounds.exists():
-                print(f"\tTedana classifications file not found for subject: {sub_id} and session: {ses_id}")
-                continue
-            confounds_df = pd.read_table(tedana_confounds)
-
             # ---------- Remove dummy volumes if necessary ----------
             if dummy_scans > 0:
                 cons_dur_rt_dur_events_df["onset"] = cons_dur_rt_dur_events_df["onset"] - (dummy_scans * t_r)
                 cons_dur_rt_dur_events_df = cons_dur_rt_dur_events_df.loc[cons_dur_rt_dur_events_df["onset"] >= 0].reset_index(drop=True)
                 preproc_img = preproc_img.slicer[..., dummy_scans:]
                 confounds_df = confounds_df.loc[dummy_scans:].reset_index(drop=True)
+
+            # Select confounds
+            confounds_df = confounds_df[["trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"]]
 
             # ---------- Fit GLM ----------
             model = FirstLevelModel(
