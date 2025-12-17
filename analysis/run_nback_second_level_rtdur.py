@@ -76,7 +76,7 @@ for ses_id in ses_ids:
             prepost_dm.append([0, 1] + list(subject_effect[i_subject, :]))
 
         # Find the brain mask from fMRIPrep
-        fname = f"sub-{sub_id}_ses-{ses_id}_task-fracback_acq-MBME_part-mag_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
+        fname = f"{sub_id}_{ses_id}_task-fracback_acq-MBME_part-mag_space-MNI152NLin6Asym_res-2_desc-brain_mask.nii.gz"
         mask_file = fmriprep_dir / sub_id / ses_id / "func" / fname
         if not mask_file.exists():
             print(
@@ -98,7 +98,7 @@ for i_mask, mask_file in enumerate(mask_files):
         group_mask_data = mask_data
     else:
         group_mask_data = group_mask_data * mask_data
-    group_mask_img = nb.Nifti1Image(group_mask_data, mask_img.affine, mask_img.header)
+group_mask_img = nb.Nifti1Image(group_mask_data, mask_img.affine, mask_img.header)
 
 # ----------------------------------------------------------
 # ANALYSIS 1: ONE-SAMPLE T-TEST
