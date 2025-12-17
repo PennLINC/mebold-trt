@@ -4,7 +4,6 @@ from pathlib import Path
 import nibabel as nb
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
 from nilearn.glm.second_level import SecondLevelModel
 from nilearn.interfaces.bids import save_glm_to_bids
 from nilearn.image import load_img
@@ -15,6 +14,7 @@ from nilearn.image import load_img
 # ----------------------------------------------------------
 # First-level output root
 firstlevel_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives/fracback")
+fmriprep_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_unzipped/fmriprep")
 
 # Where to write second-level outputs
 group_out_dir = firstlevel_dir / "group-all"
@@ -23,12 +23,6 @@ group_out_dir.mkdir(exist_ok=True)
 # ----------------------------------------------------------
 # TEMPLATEFLOW MASK + BACKGROUND (same bg as first level)
 # ----------------------------------------------------------
-# Brain mask for analysis (binary mask)
-group_mask_img = load_img(
-    "/cbica/projects/executive_function/.cache/templateflow/tpl-MNI152NLin6Asym/"
-    "tpl-MNI152NLin6Asym_res-02_desc-brain_mask.nii.gz"
-)
-
 # Background image for report visualization (underlay)
 bg_img = load_img(
     "/cbica/projects/executive_function/.cache/templateflow/tpl-MNI152NLin6Asym/"
@@ -45,6 +39,8 @@ pattern = (
     "{sub_id}_{ses_id}_task-fracback_acq-MBME_"
     "contrast-twoBackMinusZeroBack_stat-effect_statmap.nii.gz"
 )
+
+mask_files = []
 
 subject_list = []
 subject_dirs = sorted(firstlevel_dir.glob("sub-*"))
@@ -66,7 +62,7 @@ for subject_dir in subject_dirs:
         subject_list.append(sub_id)
 
 map_labels = []
-design_matrix_labels = ["ses1", "ses2"] + [s.replace("-", "") for s in subject_list]
+design_matrix_labels = ["ses_1", "ses_2"] + [s.replace("-", "_") for s in subject_list]
 ses_ids = ["ses-1", "ses-2"]
 for ses_id in ses_ids:
     subject_effect = np.eye(len(subject_list))
@@ -79,9 +75,30 @@ for ses_id in ses_ids:
         else:
             prepost_dm.append([0, 1] + list(subject_effect[i_subject, :]))
 
+        # Find the brain mask from fMRIPrep
+        fname = f"sub-{sub_id}_ses-{ses_id}_task-fracback_acq-MBME_part-mag_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
+        mask_file = fmriprep_dir / sub_id / ses_id / "func" / fname
+        if not mask_file.exists():
+            print(
+                f"\tMask file not found for subject: {sub_id} and session: {ses_id}\n"
+                f"\t{mask_file}"
+            )
+            continue
+        mask_files.append(mask_file)
+
 print(f"Found {len(effect_maps)} first-level effect-size maps:\n")
 for p in effect_maps:
     print("  ", p)
+
+# Build mask from intersection of all masks
+for i_mask, mask_file in enumerate(mask_files):
+    mask_img = nb.load(mask_file)
+    mask_data = mask_img.get_fdata().astype(bool)
+    if i_mask == 0:
+        group_mask_data = mask_data
+    else:
+        group_mask_data = group_mask_data * mask_data
+    group_mask_img = nb.Nifti1Image(group_mask_data, mask_img.affine, mask_img.header)
 
 # ----------------------------------------------------------
 # ANALYSIS 1: ONE-SAMPLE T-TEST
@@ -156,8 +173,8 @@ model = model.fit(
 # ----------------------------------------------------------
 # SAVE OUTPUTS IN BIDS-LIKE FORMAT
 # ----------------------------------------------------------
-group_contrast_name = "ses1MinusSes2"
-contrasts = {group_contrast_name: "ses1 - ses2"}
+group_contrast_name = "ses_1 - ses_2"
+contrasts = {group_contrast_name: "ses_1 - ses_2"}
 
 save_glm_to_bids(
     model=model,
