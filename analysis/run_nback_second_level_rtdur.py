@@ -72,7 +72,7 @@ for ses_id in ses_ids:
     subject_effect = np.eye(len(subject_list))
     for i_subject, sub_id in enumerate(subject_list):
         map_labels.append(f"{sub_id}_{ses_id}")
-        effect_map = firstlevel_dir / f"sub-{sub_id}" / ses_id / "func" / pattern.format(sub_id=sub_id, ses_id=ses_id)
+        effect_map = firstlevel_dir / sub_id / ses_id / "func" / pattern.format(sub_id=sub_id, ses_id=ses_id)
         effect_maps.append(effect_map)
         if ses_id == "ses-1":
             prepost_dm.append([1, 0] + list(subject_effect[i_subject, :]))
