@@ -74,9 +74,9 @@ for ses_id in ses_ids:
         effect_map = firstlevel_dir / f"sub-{sub_id}" / ses_id / "func" / pattern.format(sub_id=sub_id, ses_id=ses_id)
         effect_maps.append(effect_map)
         if ses_id == "ses-1":
-            prepost_dm.append([1, 0] + subject_effect[i_subject, :])
+            prepost_dm.append([1, 0] + list(subject_effect[i_subject, :]))
         else:
-            prepost_dm.append([0, 1] + subject_effect[i_subject, :])
+            prepost_dm.append([0, 1] + list(subject_effect[i_subject, :]))
 
 print(f"Found {len(effect_maps)} first-level effect-size maps:\n")
 for p in effect_maps:
