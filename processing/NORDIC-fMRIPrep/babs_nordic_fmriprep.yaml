@@ -12,8 +12,12 @@ pipeline:
     config:
       bids_app_args:
         $SUBJECT_SELECTION_FLAG: "--participant-label"
+        --bids-filter-file: "/code/nordic_filter.json"
+      
       singularity_args:
+        - -B code/nordic_filter.json:/code/nordic_filter.json
         - '--cleanenv'
+        
     inter_step_cmds: |
       # Delete rec-nonordic files (original data with new names)
       echo "Deleting rec-nonordic files (original data)..."
@@ -25,7 +29,7 @@ pipeline:
     config:
       bids_app_args:
         $SUBJECT_SELECTION_FLAG: "--participant-label"
-        -w: "$BABS_TMPDIR"
+        -w: "/tmpwk"
         --stop-on-first-crash: ""
         --fs-license-file: "/cbica/software/external/freesurfer/license.txt"
         --output-spaces: "func T1w MNI152NLin6Asym:res-2"
@@ -38,8 +42,12 @@ pipeline:
         --me-output-echos: ""
         --project-goodvoxels: ""
         --session-label: "1 2 3"
+        --bids-filter-file: "/code/fmriprep_filter.json"
 
       singularity_args:
+        - -B code/fmriprep_filter.json:/code/fmriprep_filter.json
+        - -B "${PWD}/.git/tmp/wkdir":/tmpwk
+        - --env TMPDIR=/tmpwk
         - --containall
         - --writable-tmpfs
 
@@ -69,4 +77,3 @@ script_preamble: |
 
 # Where to run the jobs:
 job_compute_space: "${TMP}" # [FIX ME] replace "/path/to/temporary_compute_space" with yours
-

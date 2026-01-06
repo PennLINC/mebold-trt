@@ -20,9 +20,11 @@ bids_app_args:
     --omp-nthreads: "4"
     --mem-mb: "60000"
     --dummy-scans: "auto"
+    --bids-filter-file: "/code/xcpd_SE_filter.json"
 
 # Arguments that are passed directly to singularity/apptainer:
 singularity_args:
+    - -B code/xcpd_SE_filter.json:/code/xcpd_SE_filter.json
     - --containall
     - --writable-tmpfs
 
@@ -53,5 +55,4 @@ script_preamble: |
 
 # Where to run the jobs:
 job_compute_space: "${TMP}" # [FIX ME] replace "/path/to/temporary_compute_space" with yours
-
 

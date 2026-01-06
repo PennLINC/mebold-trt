@@ -85,7 +85,6 @@ def _normalize_subject_label(subject_label):
 def run_tedana(
     raw_dir,
     fmriprep_dir,
-    temp_dir,
     tedana_out_dir,
     session_label=None,
     subject_label=None,
@@ -170,6 +169,7 @@ def run_tedana(
                 f"{base_query}_desc-preproc_bold.nii.gz",
             )
             assert os.path.isfile(fmriprep_file), fmriprep_file
+            fmriprep_files.append(fmriprep_file)
 
             # Remove non-steady-state volumes
             echo_img = nb.load(fmriprep_file)
@@ -177,12 +177,6 @@ def run_tedana(
                 tr = echo_img.header.get_zooms()[3]
             if n_volumes is None:
                 n_volumes = echo_img.shape[-1]
-            temporary_file = os.path.join(
-                temp_dir,
-                os.path.basename(fmriprep_file),
-            )
-            echo_img.to_filename(temporary_file)
-            fmriprep_files.append(temporary_file)
 
         if tr is None or n_volumes is None:
             raise RuntimeError(
@@ -200,7 +194,8 @@ def run_tedana(
 
         if "task-fracback" in prefix:
             events_file = base_file.replace(
-                "_echo-1_part-mag_bold.nii.gz", "_events.tsv"
+                "_echo-1_part-mag_bold.nii.gz",
+                "_events.tsv",
             )
             assert os.path.isfile(events_file), events_file
 
@@ -239,11 +234,26 @@ def run_tedana(
             fittype="curvefit",
             combmode="t2s",
             tree=tree,
-            gscontrol=["mir"],
             tedort=True,
             external_regressors=confounds_file,
-            tedpca="kic",
+            tedpca="mdl",
+            dummy_scans=dummy_scans,
         )
+        mixing = os.path.join(tedana_run_out_dir, f"{prefix}_desc-ICAOrth_mixing.tsv")
+        mixing_df = pd.read_table(mixing)
+        metrics = os.path.join(tedana_run_out_dir, f"{prefix}_desc-tedana_metrics.tsv")
+        metrics_df = pd.read_table(metrics, index_col="Component")
+        comps_rejected = metrics_df[metrics_df["classification"] == "rejected"].index.tolist()
+        mixing_df = mixing_df[comps_rejected]
+        if dummy_scans > 0:
+            # Add dummy volumes to the rejected array
+            rejected_arr = mixing_df.to_numpy()
+            dummy_arr = np.zeros((dummy_scans, rejected_arr.shape[1]))
+            rejected_arr = np.concatenate((dummy_arr, rejected_arr), axis=0)
+            mixing_df = pd.DataFrame(rejected_arr, columns=mixing_df.columns)
+
+        out_confounds = os.path.join(tedana_run_out_dir, f"{prefix}_desc-rejected_timeseries.tsv")
+        mixing_df.to_csv(out_confounds, sep="\t", index=False)
 
 
 if __name__ == "__main__":
@@ -257,11 +267,6 @@ if __name__ == "__main__":
         "--fmriprep-dir",
         required=True,
         help="fMRIPrep derivatives directory.",
-    )
-    parser.add_argument(
-        "--temp-dir",
-        required=True,
-        help="Directory for temporary files (one per echo).",
     )
     parser.add_argument(
         "--tedana-out-dir",
@@ -278,12 +283,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    os.makedirs(args.temp_dir, exist_ok=True)
-
     run_tedana(
         raw_dir=args.raw_dir,
         fmriprep_dir=args.fmriprep_dir,
-        temp_dir=args.temp_dir,
         tedana_out_dir=args.tedana_out_dir,
         session_label=args.session_label,
         subject_label=args.subject_label,

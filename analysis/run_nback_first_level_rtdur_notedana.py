@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import sys
 from glob import glob
 from pathlib import Path
@@ -9,7 +10,6 @@ import numpy as np
 import pandas as pd
 from nilearn.glm.first_level import FirstLevelModel
 from nilearn.interfaces.bids import save_glm_to_bids
-from scipy.stats import norm
 
 sys.path.append("..")
 from processing.utils import events_to_rtdur
@@ -17,14 +17,13 @@ from processing.utils import events_to_rtdur
 
 if __name__ == "__main__":
     # ---------- CONFIG ----------
-    bids_root = Path("/cbica/projects/executive_function/mebold-trt/dset")
-    derivatives_dir = Path("/cbica/projects/executive_function/mebold-trt/derivatives")
-    fmriprep_dir = derivatives_dir / "fmriprep"
-    tedana_dir = derivatives_dir / "tedana"
-    out_dir = Path("/cbica/projects/executive_function/mebold-trt/derivatives/fracback")
+    bids_root = Path("/cbica/projects/executive_function/mebold_trt/ds005250")
+    derivatives_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives")
+    fmriprep_dir = derivatives_dir / "nordic_fmriprep_unzipped" / "fmriprep"
+    out_dir = Path("/cbica/projects/executive_function/mebold_trt/derivatives/fracback_notedana")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    subject_dirs = sorted(glob("/cbica/projects/executive_function/mebold-trt/dset/sub-*"))
+    subject_dirs = sorted(bids_root.glob("sub-*"))
     for subject_dir in subject_dirs:
         sub_id = os.path.basename(subject_dir).split("-")[1]
         session_dirs = sorted(glob(f"{subject_dir}/ses-*"))
@@ -34,26 +33,28 @@ if __name__ == "__main__":
 
             bids_func_dir = bids_root / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
             fmriprep_func_dir = fmriprep_dir / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
-            tedana_func_dir = tedana_dir / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
             prefix = f"sub-{sub_id}_ses-{ses_id}_task-fracback_acq-MBME"
 
             # ---------- Preprocessed data from fMRIPrep ----------
             preproc_file = (
-                fmriprep_func_dir / f"{prefix}_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
+                fmriprep_func_dir / f"{prefix}_part-mag_space-MNI152NLin6Asym_res-2_desc-preproc_bold.nii.gz"
             )
             if not preproc_file.exists():
-                print(f"\tPreprocessed file not found for subject: {sub_id} and session: {ses_id}")
+                print(
+                    f"\tPreprocessed file not found for subject: {sub_id} and session: {ses_id}\n"
+                    f"\t{preproc_file}"
+                )
                 continue
 
             preproc_img = nb.load(preproc_file)
 
-            preproc_json = preproc_file.replace(".nii.gz", ".json")
+            preproc_json = str(preproc_file).replace(".nii.gz", ".json")
             with open(preproc_json, "r") as f:
                 preproc_json_data = json.load(f)
             t_r = preproc_json_data["RepetitionTime"]
             slice_time_ref = preproc_json_data["StartTime"]
 
-            mask_file = fmriprep_func_dir / f"{prefix}_space-MNI152NLin6Asym_res-2_desc-brain_mask.nii.gz"
+            mask_file = fmriprep_func_dir / f"{prefix}_part-mag_space-MNI152NLin6Asym_res-2_desc-brain_mask.nii.gz"
             if not mask_file.exists():
                 print(f"\tMask file not found for subject: {sub_id} and session: {ses_id}")
                 continue
@@ -61,18 +62,18 @@ if __name__ == "__main__":
             mask_img = str(mask_file)
 
             # ---------- Dummy volumes from fMRIPrep ----------
-            confounds_file = fmriprep_func_dir / f"{prefix}_desc-confounds_timeseries.tsv"
+            confounds_file = fmriprep_func_dir / f"{prefix}_part-mag_desc-confounds_timeseries.tsv"
             if not confounds_file.exists():
                 print(f"\tConfounds file not found for subject: {sub_id} and session: {ses_id}")
                 continue
 
-            fmriprep_confounds_df = pd.read_table(confounds_file)
+            confounds_df = pd.read_table(confounds_file)
             # Infer the number of dummy volumes from the confounds dataframe
-            nss_cols = [c for c in fmriprep_confounds_df.columns if c.startswith("non_steady_state_outlier")]
+            nss_cols = [c for c in confounds_df.columns if c.startswith("non_steady_state_outlier")]
 
             dummy_scans = 0
             if nss_cols:
-                initial_volumes_df = fmriprep_confounds_df[nss_cols]
+                initial_volumes_df = confounds_df[nss_cols]
                 dummy_scans = np.any(initial_volumes_df.to_numpy(), axis=1)
                 dummy_scans = np.where(dummy_scans)[0]
 
@@ -90,22 +91,6 @@ if __name__ == "__main__":
             events_df = pd.read_table(events_file)
             cons_dur_rt_dur_events_df = events_to_rtdur(events_df)
 
-            # ---------- Confounds from TEDANA ----------
-            # XXX: This section is pseudo-code for now
-            tedana_classifications = tedana_func_dir / f"{prefix}_desc-tedana_metrics.tsv"
-            if not tedana_classifications.exists():
-                print(f"\tTedana classifications file not found for subject: {sub_id} and session: {ses_id}")
-                continue
-            tedana_df = pd.read_table(tedana_classifications)
-
-            mixing_file = tedana_func_dir / f"{prefix}_desc-ICAOrth_mixing.tsv"
-            if not mixing_file.exists():
-                print(f"\tTedana mixing file not found for subject: {sub_id} and session: {ses_id}")
-                continue
-            mixing_df = pd.read_table(mixing_file)
-            noise_components = [c for c in tedana_df['Component'].tolist() if tedana_df['Component'][c] == 'noise']
-            confounds_df = mixing_df[noise_components]
-
             # ---------- Remove dummy volumes if necessary ----------
             if dummy_scans > 0:
                 cons_dur_rt_dur_events_df["onset"] = cons_dur_rt_dur_events_df["onset"] - (dummy_scans * t_r)
@@ -113,19 +98,18 @@ if __name__ == "__main__":
                 preproc_img = preproc_img.slicer[..., dummy_scans:]
                 confounds_df = confounds_df.loc[dummy_scans:].reset_index(drop=True)
 
+            # Select confounds
+            confounds_df = confounds_df[["trans_x", "trans_y", "trans_z", "rot_x", "rot_y", "rot_z"]]
+
             # ---------- Fit GLM ----------
             model = FirstLevelModel(
                 t_r=t_r,
                 slice_time_ref=slice_time_ref,
                 hrf_model="glover",
-                drift_model="cosine",
-                high_pass=0.01,
-                drift_order=1,
                 mask_img=mask_img,
                 smoothing_fwhm=5,
                 noise_model="ar1",
                 minimize_memory=False,
-                subject_label=sub_id,
             )
             model = model.fit(
                 run_imgs=preproc_img,
@@ -139,18 +123,32 @@ if __name__ == "__main__":
             print("\t\t", design_matrix.columns)
             print(f"\tTotal # regressors in design matrix: {design_matrix.shape[1]}")
 
+            func_out_dir = out_dir / f"sub-{sub_id}" / f"ses-{ses_id}" / "func"
+            func_out_dir.mkdir(parents=True, exist_ok=True)
             save_glm_to_bids(
                 model,
                 contrasts="two_back - zero_back",
                 contrast_types={"two_back - zero_back": "t"},
-                out_dir=out_dir,
-                threshold=norm.isf(0.001),
-                cluster_threshold=10,
+                out_dir=func_out_dir,
+                prefix=prefix,
                 bg_img=(
                     "/cbica/projects/executive_function/.cache/templateflow/"
                     "tpl-MNI152NLin6Asym/tpl-MNI152NLin6Asym_res-02_T1w.nii.gz"
                 ),
             )
             print(f"\tDone fitting GLM for subject: {sub_id} and session: {ses_id}")
+
+            # Post-Nilearn cleanup
+            nilearn_func_out_dir = func_out_dir / f"sub-{sub_id}"
+            dataset_description_file = out_dir / "dataset_description.json"
+            nilearn_dataset_description_file = func_out_dir / "dataset_description.json"
+            if not dataset_description_file.exists():
+                shutil.copyfile(nilearn_dataset_description_file, dataset_description_file)
+
+            os.remove(nilearn_dataset_description_file)
+            # Move contents of nilearn_func_out_dir to func_out_dir
+            for item in nilearn_func_out_dir.iterdir():
+                shutil.move(item, func_out_dir / item.name)
+            nilearn_func_out_dir.rmdir()
 
     print("\n----\nDONE\n----\n")
