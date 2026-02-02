@@ -1,0 +1,6 @@
+title: Multi Echo BOLD Comparison Pilot Replication Guide
+description: <br>Project Information and Reproducibility Guide
+#theme: jekyll-theme-minimal
+remote_theme: pages-themes/cayman@v0.2.0
+plugins:
+- jekyll-remote-theme
