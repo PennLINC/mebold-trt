@@ -158,7 +158,7 @@ def run_tedana(
 
             # Get echo time from json file
             with open(raw_file.replace(".nii.gz", ".json"), "r") as f:
-                echo_times.append(json.load(f)["EchoTime"] * 1000)
+                echo_times.append(json.load(f)["EchoTime"])
 
             # Get the fMRIPrep BOLD files
             fmriprep_file = os.path.join(
@@ -229,6 +229,7 @@ def run_tedana(
             data=fmriprep_files,
             tes=echo_times,
             mask=mask,
+            masktype=["dropout", "decay"],
             out_dir=tedana_run_out_dir,
             prefix=prefix,
             fittype="curvefit",
@@ -236,7 +237,9 @@ def run_tedana(
             tree=tree,
             tedort=True,
             external_regressors=confounds_file,
-            tedpca="mdl",
+            tedpca="aic",
+            ica_method="robustica",
+            n_robust_runs=50,
             dummy_scans=dummy_scans,
         )
         mixing = os.path.join(tedana_run_out_dir, f"{prefix}_desc-ICAOrth_mixing.tsv")

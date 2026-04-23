@@ -2,13 +2,13 @@
 #SBATCH --job-name=tedana
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --array=1-17
+#SBATCH --array=6,14
 #SBATCH --cpus-per-task=2
-#SBATCH --mem=24gb
+#SBATCH --mem=80gb
 #SBATCH --time=24:00:00
 # Outputs ----------------------------------
-#SBATCH --output=/cbica/projects/executive_function/mebold_trt/code/processing/jobs/tedana_%A-%a.out
-#SBATCH --error=/cbica/projects/executive_function/mebold_trt/code/processing/jobs/tedana_%A-%a.err
+#SBATCH --output=/cbica/projects/executive_function/mebold_trt/github/parker/processing/jobs/tedana_%A-%a.out
+#SBATCH --error=/cbica/projects/executive_function/mebold_trt/github/parker/processing/jobs/tedana_%A-%a.err
 # ------------------------------------------
 
 eval "$(micromamba shell hook --shell bash)"
@@ -17,10 +17,10 @@ micromamba activate meboldtrt
 set -euo pipefail
 pwd; hostname; date
 
-RAW_DIR="/cbica/projects/executive_function/mebold_trt/ds005250"
+RAW_DIR="/cbica/projects/executive_function/mebold_trt/dset"
 FMRIPREP_DIR="/cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_unzipped/fmriprep"
 TEDANA_OUT_DIR="/cbica/projects/executive_function/mebold_trt/derivatives/tedana"
-CODE_DIR="/cbica/projects/executive_function/mebold_trt/code"
+CODE_DIR="/cbica/projects/executive_function/mebold_trt/github/parker"
 PAIRS_TSV="${CODE_DIR}/processing/jobs/tedana_pairs.tsv"
 
 mkdir -p "${CODE_DIR}/processing/jobs"

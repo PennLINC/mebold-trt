@@ -10,3 +10,16 @@ babs init \
   --processing_level subject \
   --queue slurm \
   /cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_babs_project
+
+cp \
+  /cbica/projects/executive_function/mebold_trt/github/parker/processing/NORDIC-fMRIPrep/fmriprep_filter.json \
+  /cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_babs_project/analysis/code
+cp \
+  /cbica/projects/executive_function/mebold_trt/github/parker/processing/NORDIC-fMRIPrep/nordic_filter.json \
+  /cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_babs_project/analysis/code
+
+cd /cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_babs_project/analysis
+datalad get -r containers
+
+cd /cbica/projects/executive_function/mebold_trt/derivatives/nordic_fmriprep_babs_project
+babs sync-code -m "add nordic and fmriprep filter files"
