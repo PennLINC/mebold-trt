@@ -1,8 +1,8 @@
 from pathlib import Path
 
-RAW_DIR = Path("/cbica/projects/executive_function/mebold_trt/ds005250")
+RAW_DIR = Path("/cbica/projects/executive_function/mebold_trt/dset")
 PAIRS_TSV = Path(
-    "/cbica/projects/executive_function/mebold_trt/code/processing/jobs/tedana_pairs.tsv"
+    "/cbica/projects/executive_function/mebold_trt/github/parker/processing/jobs/tedana_pairs.tsv"
 )
 
 pairs = sorted(
