@@ -34,5 +34,5 @@ if __name__ == "__main__":
         symmetric_cbar=True,
         draw_cross=False,
         black_bg=False,
-        output_file="../figures/nback_second_level_onesample.png",
+        output_file="../figures/nback_second_level_onesample.pdf",
     )

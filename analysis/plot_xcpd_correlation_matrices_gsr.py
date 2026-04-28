@@ -63,7 +63,8 @@ if __name__ == "__main__":
         glob(
             "/cbica/projects/executive_function/mebold_trt/derivatives/xcpd_ME_unzipped/xcpd/"
             "sub-*/ses-*/func/*seg-4S156Parcels_stat-pearsoncorrelation_relmat.tsv"
-        ) + glob(
+        )
+        + glob(
             "/cbica/projects/executive_function/mebold_trt/derivatives/xcpd_SE_unzipped/xcpd/"
             "sub-*/ses-*/func/*seg-4S156Parcels_stat-pearsoncorrelation_relmat.tsv"
         )
@@ -85,8 +86,12 @@ if __name__ == "__main__":
             np.fill_diagonal(mean_arr_z, 0)
 
             mean_arr_r = np.tanh(mean_arr_z)
-            arr_df = pd.DataFrame(data=mean_arr_r, index=node_labels, columns=node_labels)
-            arr_df.to_csv(f"../data/XCPD_acq-{acq}_Mean.tsv", sep="\t", index_label="Node")
+            arr_df = pd.DataFrame(
+                data=mean_arr_r, index=node_labels, columns=node_labels
+            )
+            arr_df.to_csv(
+                f"../data/XCPD_acq-{acq}_Mean.tsv", sep="\t", index_label="Node"
+            )
 
             fig, ax = plt.subplots(figsize=(10, 10))
             ax.imshow(mean_arr_r, cmap="seismic", vmin=-1, vmax=1)
@@ -156,7 +161,7 @@ if __name__ == "__main__":
 
             fig.tight_layout()
             fig.savefig(
-                f"../figures/XCPD_acq-{acq}_colorbar.png",
+                f"../figures/XCPD_acq-{acq}_colorbar.pdf",
                 bbox_inches="tight",
             )
             plt.close()
