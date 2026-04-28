@@ -137,7 +137,7 @@ if __name__ == "__main__":
             ax.axes.set_yticklabels(unique_labels)
             ax.axes.set_xticklabels(unique_labels, rotation=90)
             fig.tight_layout()
-            fig.savefig(f"../figures/XCPD_acq-{acq}_StandardDeviation.png")
+            fig.savefig(f"../figures/XCPD_acq-{acq}_StandardDeviation.pdf")
             plt.close()
 
             # Plot the colorbars
