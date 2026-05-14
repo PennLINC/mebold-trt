@@ -36,3 +36,19 @@ if __name__ == "__main__":
         black_bg=False,
         output_file="../figures/nback_second_level_onesample.pdf",
     )
+    in_file = (
+        "/cbica/projects/executive_function/mebold_trt/"
+        "derivatives/fracback/group-all/group/"
+        "model-paired_contrast-ses1MinusSes2_stat-z_statmap.nii.gz"
+    )
+    plotting.plot_stat_map(
+        in_file,
+        bg_img=bg_img,
+        display_mode="mosaic",
+        threshold=1.96,
+        colorbar=True,
+        symmetric_cbar=True,
+        draw_cross=False,
+        black_bg=False,
+        output_file="../figures/nback_second_level_paired.pdf",
+    )
