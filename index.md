@@ -71,9 +71,9 @@ micromamba activate babs
 pip install babs==0.5.4
 
 cd /cbica/projects/executive_function/mebold_trt
-datalad install https://github.com/OpenNeuroDatasets/ds005250.git
+datalad install https://github.com/OpenNeuroDatasets/ds007637.git
 
-cd /cbica/projects/executive_function/mebold_trt/ds005250
+cd /cbica/projects/executive_function/mebold_trt/ds007637
 datalad get -J 10 .
 ```
 
@@ -193,7 +193,7 @@ Run tedana using the following [scripts](https://github.com/PennLINC/mebold-trt/
 python generate_sub_ses_pairs.py
 
 # Run tedana
-cd /cbica/projects/executive_function/mebold_trt/github/parker/processing
+cd /cbica/projects/executive_function/mebold_trt/code/processing
 sbatch run_tedana.sbatch
 ```
 
@@ -297,7 +297,7 @@ bash babs_xcpd_ME_finish.sh
 ```bash
 micromamba activate meboldtrt
 
-cd /cbica/projects/executive_function/mebold_trt/github/parker/analysis
+cd /cbica/projects/executive_function/mebold_trt/code/analysis
 
 # Run first-level (run-wise) GLMs with tedana confounds
 python run_nback_first_level_rtdur.py
